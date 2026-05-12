@@ -9,7 +9,6 @@ namespace emit
 struct Binary : Expression {
   std::string op;
   std::vector<std::shared_ptr<Expression>> values;
-  std::shared_ptr<Expression> rhs;
 
   Binary(std::string op, std::vector<std::shared_ptr<Expression>> values={}) 
           : op(std::move(op)), values(std::move(values)) {}

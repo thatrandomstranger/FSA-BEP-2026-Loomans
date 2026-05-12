@@ -2,15 +2,22 @@
 #include <map>
 #include <string>
 #include <mcrl2/lps/specification.h>
+#include <mcrl2/lps/linear_process.h>
 #include "emit/function.hpp"
 #include "emit/expression.hpp"
 #include "emit/type.hpp"
 
 namespace trans {
 
+struct GlobalContext {
+  std::map<std::string, std::vector<int>> bounds = {};
+  std::map<std::string, std::shared_ptr<emit::Type>> types = {};
+};
+
+inline GlobalContext gctx;
+
 struct Context {
   std::map<std::string, std::string> vars = {};
-  std::map<std::string, std::string> types = {};
   std::map<std::string, std::string> symbs = {};
 };
 
@@ -29,8 +36,13 @@ std::vector<emit::Function> trans_maps(
   Context&
 );
 
-emit::Type trans_sort(
+std::shared_ptr<emit::Type> trans_sort(
   const mcrl2::data::alias&
+);
+
+emit::Function trans_proc(
+  const mcrl2::lps::linear_process&,
+  const Context&
 );
 
 }

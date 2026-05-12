@@ -3,7 +3,6 @@
 
 namespace emit {
 
-/// @brief Abstract Base Class representing an evaluatable expression.
 struct Expression {
   virtual void emit(std::ostream&) const = 0;
 

@@ -1,15 +1,21 @@
 #include "emit/type.hpp"
-#include "emit/indentation.hpp"
-#include <assert.h>
+#include "translate.hpp"
 
 using namespace emit;
+using namespace trans;
 
-void Type::emit(std::ostream& os) const {
-  assert(options.size() >= 1);
-  os << indent << "TYPE " << name << ":\n";
-  os << indent++ << "(\n";
-  for (const auto& opt : options)
-    os << indent << opt <<  ",\n";
-  os << --indent << ");\n";
-  os << indent << "END_TYPE\n";
+std::vector<int> Type::get_indexing_bounded() const {
+  auto indexing = get_indexing();
+  if (gctx.bounds.contains(name)) {
+    auto bounds = gctx.bounds.at(name);
+    size_t i = 0;
+
+    for (size_t j = 0; j < indexing.size(); j++) {
+      if (indexing[j] == -1)
+        indexing[j] = bounds[i++];
+      if (i >= bounds.size())
+        break;
+    }
+  }
+  return indexing;
 }

@@ -14,8 +14,8 @@ using namespace trans;
 std::string get_typename(const mcrl2::data::sort_expression& exp, 
   const Context& context) {
   auto basic = mcrl2::data::basic_sort(exp);
-  if (context.types.contains(basic.name()))
-    return context.types.at(basic.name());
+  if (gctx.types.contains(basic.name()))
+    return gctx.types.at(basic.name())->name;
   else
     return std::format("_unk_{}", std::string{basic.name()});
 }
@@ -27,7 +27,10 @@ std::vector<emit::Function> trans::trans_maps(
   std::map<std::string, std::shared_ptr<emit::Selection>> selections;
 
   for (const auto& map : spec.data().user_defined_mappings()) {
+    if (!mcrl2::data::is_function_sort(map.sort()))
+      continue;
     auto sort = mcrl2::data::function_sort(map.sort());
+
     ret.push_back({
       .name = map.name(),
       .type = get_typename(sort.codomain(), context)
@@ -46,9 +49,17 @@ std::vector<emit::Function> trans::trans_maps(
   }
 
   for (const auto& eqn : spec.data().user_defined_equations()) {
+    std::cout << eqn << std::endl;
+    if (!mcrl2::data::is_application(eqn.lhs()))
+      continue;
+
     auto appl = mcrl2::data::application(eqn.lhs());
     auto op = mcrl2::data::function_symbol(appl.head());
     auto cond = std::make_shared<emit::Binary>("&&");
+
+    if (!selections.contains(op.name()))
+      continue;
+
 
     auto eqn_context = context;
     for (int i = 0; i < appl.size(); i++) {

@@ -12,18 +12,24 @@ find_package(yaml-cpp REQUIRED)
 add_executable(mcrl22plc
   src/main.cpp
 
+  src/emit/application.cpp
+  src/emit/array_type.cpp
   src/emit/assignment.cpp
   src/emit/binary.cpp
+  src/emit/enum_type.cpp
   src/emit/function.cpp
   src/emit/indentation.cpp
+  src/emit/index.cpp
   src/emit/reference.cpp
   src/emit/selection.cpp
+  src/emit/struct_type.cpp
   src/emit/type.cpp
   src/emit/variable.cpp
 
   src/trans/appl.cpp
   src/trans/expr.cpp
   src/trans/maps.cpp
+  src/trans/proc.cpp
   src/trans/sort.cpp
 )
 target_include_directories(mcrl22plc PRIVATE

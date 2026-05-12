@@ -6,7 +6,7 @@
 using namespace trans;
 
 static const std::set<std::string> binary_operators {
-  ">", "<", ">=", "<=", "+", "-"
+  ">", "<", ">=", "<=", "+", "-", "&&"
 };
 
 std::shared_ptr<emit::Expression> trans::trans_appl(
