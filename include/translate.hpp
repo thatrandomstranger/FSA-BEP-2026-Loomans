@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <set>
 #include <string>
 #include <mcrl2/lps/specification.h>
 #include <mcrl2/lps/linear_process.h>
@@ -12,6 +13,9 @@ namespace trans {
 struct GlobalContext {
   std::map<std::string, std::vector<int>> bounds = {};
   std::map<std::string, std::shared_ptr<emit::Type>> types = {};
+  std::set<std::string> struct_comps = {};
+  std::map<std::string, std::shared_ptr<emit::Expression>> constants = {};
+  std::map<std::string, std::shared_ptr<emit::Expression>> recognizers = {};
 };
 
 inline GlobalContext gctx;

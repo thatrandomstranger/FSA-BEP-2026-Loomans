@@ -4,5 +4,5 @@
 using namespace emit;
 
 void Assignment::emit(std::ostream& os) const {
-  os << indent << var << " := " << *expr << ";\n";
+  os << indent << *var << " := " << *expr << ";\n";
 }

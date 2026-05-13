@@ -7,6 +7,7 @@
 #include <mcrl2/lps/print.h>
 #include "translate.hpp"
 #include "emit/enum_type.hpp"
+#include "emit/struct_type.hpp"
 #include "emit/reference_type.hpp"
 #include <yaml-cpp/yaml.h>
 
@@ -54,7 +55,8 @@ int main() {
   auto context = trans::Context {
     .symbs = {
       {"true", "TRUE"},
-      {"false", "FALSE"}
+      {"false", "FALSE"},
+      {"!", "NOT"}
     }
   };
   auto sorts = std::vector<std::shared_ptr<emit::Type>> {};
@@ -65,6 +67,9 @@ int main() {
       for (const auto op : et->options)
         context.symbs.insert_or_assign(op, 
           std::format("{}.{}", sorts.back()->name, op));
+    } else if (auto st = dynamic_cast<emit::StructType*>(sorts.back().get())) {
+      for (const auto comp : st->components)
+        trans::gctx.struct_comps.insert(comp.first);
     }
   }
   auto maps = trans::trans_maps(spec, context);
@@ -75,5 +80,4 @@ int main() {
     std::cout << m << '\n';
 
   auto proc = spec.process();
-  // std::cout << trans::trans_proc(proc, context) << std::endl;
 }

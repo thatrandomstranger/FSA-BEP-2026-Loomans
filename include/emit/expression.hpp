@@ -1,17 +1,8 @@
 #pragma once
-#include <ostream>
+#include "statement.hpp"
 
 namespace emit {
 
-struct Expression {
-  virtual void emit(std::ostream&) const = 0;
+struct Expression : Statement {};
 
-  virtual ~Expression() = default;
-};
-
-}
-
-inline std::ostream& operator<<(std::ostream& os, const emit::Expression& ex) {
-  ex.emit(os);
-  return os;
 }

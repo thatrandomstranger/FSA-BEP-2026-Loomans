@@ -4,7 +4,7 @@
 using namespace emit;
 
 void Variable::emit(std::ostream& out) const {
-  out << indent << name << "\t:\t" << type << ";\n";
+  out << indent << name << "\t:\t" << type->name << ";\n";
 }
 
 std::ostream& operator<<(std::ostream& os, const Variable& var) {

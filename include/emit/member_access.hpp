@@ -12,7 +12,7 @@ struct MemberAccessExpression : Expression {
       : base(std::move(base)), member_name(std::move(member_name)) {}
 
   void emit(std::ostream& os) const override {
-    os << base << ".\"" << member_name << "\"";
+    os << *base << "." << member_name;
   }
 };
 

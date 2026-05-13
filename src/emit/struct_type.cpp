@@ -32,7 +32,7 @@ std::vector<std::shared_ptr<Expression>> StructType::get_indexers(
   std::vector<std::shared_ptr<Expression>> indexers;
   for (const auto& [n, t] : components) {
     auto member = std::make_shared<MemberAccessExpression>(expr, n);
-    auto sub_indexers = t->get_indexers(expr);
+    auto sub_indexers = t->get_indexers(member);
     indexers.insert(indexers.end(), sub_indexers.begin(), sub_indexers.end());
   }
   return indexers;

@@ -8,9 +8,11 @@ namespace emit {
 
 struct Function {
   std::string name;
-  std::string type;
+  std::shared_ptr<Type> type;
   std::vector<Variable> inputs;
   std::vector<std::shared_ptr<Statement>> statements = {};
+  bool io = false;
+
 
   void emit(std::ostream&) const;
 }; 

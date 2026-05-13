@@ -3,6 +3,7 @@
 #include "emit/struct_type.hpp"
 #include "emit/reference_type.hpp"
 #include "emit/array_type.hpp"
+#include "emit/reference.hpp"
 #include <memory>
 #include <format>
 
@@ -38,6 +39,12 @@ std::shared_ptr<emit::Type> trans::trans_sort(const mcrl2::data::alias &alias)
       {
         assert(con.arguments().size() == 0 && "Constructors with arguments not implemented");
         options.push_back(con.name());
+
+        auto recog = con.recogniser().function().name();
+        if (recog.size() > 0)
+          gctx.recognizers.insert_or_assign(
+            recog, std::make_shared<emit::Reference>(std::format("{}.{}", name, std::string(con.name())))
+          );
       }
       return std::make_shared<emit::EnumType>(name, options);
     }

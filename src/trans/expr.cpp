@@ -10,6 +10,8 @@ std::shared_ptr<emit::Expression> trans::trans_expr(
     auto symb = mcrl2::data::function_symbol(expr);
     if (context.symbs.contains(symb.name()))
       return std::make_shared<emit::Reference>(context.symbs.at(symb.name()));
+    if (gctx.constants.contains(symb.name()))
+      return gctx.constants.at(symb.name());
   } else if (mcrl2::data::is_application(expr)) {
     return trans_appl(mcrl2::data::application(expr), context);
   } else if (expr.type_is_int()) {
