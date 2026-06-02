@@ -9,6 +9,8 @@
 #include "emit/assignment.hpp"
 #include "emit/array_type.hpp"
 #include "emit/struct_type.hpp"
+#include "emit/iterate.hpp"
+#include "emit/index.hpp"
 
 using namespace trans;
 
@@ -16,57 +18,60 @@ static std::vector<std::shared_ptr<emit::Statement>> trans_assignment(
     const emit::Variable &var,
     mcrl2::data::data_expression rhs,
     const Context &context,
-    std::vector<std::shared_ptr<emit::Statement>> &aux_stmts,
     std::vector<emit::Variable> &aux_vars)
 {
+  std::vector<std::shared_ptr<emit::Statement>> stmts;
   if (auto arr_type = dynamic_cast<emit::ArrayType *>(var.type.get()))
   {
     if (mcrl2::data::is_application(rhs))
     {
-      return {trans_expr(rhs, context, aux_stmts, aux_vars)};
+      stmts.push_back(trans_expr(rhs, context, stmts, aux_vars));
+    }
+    else if (mcrl2::data::is_variable(rhs))
+    {
     }
     else
     {
-      int count = 1;
-      for (auto i : arr_type->domain->get_indexing_bounded())
-        count *= i;
-      return {std::make_shared<emit::FBCall>(
-          "FILL_BLK",
-          std::vector<emit::FBCall::Argument>{
-              {.name = "IN",
-               .arg = trans_expr(rhs, context, aux_stmts, aux_vars),
-               .is_input = true},
-              {.name = "COUNT",
-               .arg = std::make_shared<emit::Reference>(std::format("{}", count)),
-               .is_input = true},
-              {.name = "OUT",
-               .arg = std::make_shared<emit::Reference>("#" + var.name),
-               .is_input = false},
-          })};
+      
+      auto iterate = std::make_shared<emit::Iterate>();
+      auto indexing = arr_type->domain->get_indexing_bounded();
+      auto index = std::make_shared<emit::Index>(
+        std::make_shared<emit::Reference>("#" + var.name));
+      for (int i = 0; auto dim : indexing) {
+        auto iter = std::format("iter_{}", i++);
+        aux_vars.push_back({iter, gctx.types.at("Nat")});
+        iterate->dims.push_back({dim, iter});
+        index->indexers.push_back(std::make_shared<emit::Reference>(iter));
+      }
+      iterate->stmts.push_back(
+        std::make_shared<emit::Assignment>(
+          index, trans_expr(rhs, context, stmts, aux_vars)
+        )
+      );
+      stmts.push_back(iterate);
     }
   }
   else if (auto stype = dynamic_cast<emit::StructType *>(var.type.get()); stype 
     && mcrl2::data::is_application(rhs))
   {
     auto con = mcrl2::data::application(rhs);
-    std::vector<std::shared_ptr<emit::Statement>> ret;
 
     for (size_t i = 0; auto p : con) {
-      ret.push_back(
+      stmts.push_back(
         std::make_shared<emit::Assignment>(
           std::make_shared<emit::Reference>("#" + var.name + "." + stype->components[i++].first),
-          trans_expr(p, context, aux_stmts, aux_vars))
+          trans_expr(p, context, stmts, aux_vars))
       );
     }
-    return ret;
+    return stmts;
   }
   else
   {
     return {std::make_shared<emit::Assignment>(
         std::make_shared<emit::Reference>("#" + var.name),
-        trans_expr(rhs, context, aux_stmts, aux_vars))};
+        trans_expr(rhs, context, stmts, aux_vars))};
   }
-  return {};
+  return stmts;
 }
 
 emit::FunctionBlock trans::trans_proc(
@@ -122,10 +127,9 @@ emit::FunctionBlock trans::trans_proc(
       std::make_shared<emit::Assignment>(
           std::make_shared<emit::Reference>("#execute"),
           std::make_shared<emit::Reference>("TRUE")));
-  std::vector<std::shared_ptr<emit::Statement>> aux_stmts_init;
   std::vector<emit::Variable> aux_vars;
   for (auto i = variables_start_parameters; auto arg : init.expressions()) {
-    for (auto st : trans_assignment(ret.variables[i++], arg, context, aux_stmts_init, aux_vars))
+    for (auto st : trans_assignment(ret.variables[i++], arg, context, aux_vars))
       {
         selection->options.front().statements.push_back(std::move(st));
       }
@@ -182,7 +186,7 @@ emit::FunctionBlock trans::trans_proc(
       assert(mcrl2::data::is_variable(da.lhs()));
       auto var = context.vars.at(mcrl2::data::variable(da.lhs()).name());
 
-      for (auto st : trans_assignment(var, da.rhs(), context, aux_stmts, aux_vars))
+      for (auto st : trans_assignment(var, da.rhs(), context, aux_vars))
       {
         on_done->options.back().statements.push_back(std::move(st));
       }
@@ -193,5 +197,14 @@ emit::FunctionBlock trans::trans_proc(
     option.statements.push_back(std::move(on_done));
     selection->options.push_back(std::move(option));
   }
+
+  std::set<std::string> aux_vars_seen;
+  for (const auto& var : aux_vars) {
+    if (aux_vars_seen.contains(var.name))
+      continue;
+    ret.variables.push_back(var);
+    aux_vars_seen.insert(var.name);
+  }
+
   return ret;
 }

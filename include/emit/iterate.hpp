@@ -10,7 +10,7 @@ struct Iterate : Statement {
   struct Dimension {
     int size;
     std::string variable;
-    std::shared_ptr<Expression> expr;
+    std::shared_ptr<Expression> expr = {};
   };
 
   std::vector<Dimension> dims = {};

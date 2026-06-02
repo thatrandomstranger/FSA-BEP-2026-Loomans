@@ -10,7 +10,7 @@ struct Index : Expression {
   std::vector<std::shared_ptr<Expression>> indexers;
 
   Index(std::shared_ptr<Expression> array, 
-    std::vector<std::shared_ptr<Expression>> indexers)
+    std::vector<std::shared_ptr<Expression>> indexers={})
     : array(std::move(array)), indexers(std::move(indexers)) {}
 
   void emit(std::ostream &) const override;
