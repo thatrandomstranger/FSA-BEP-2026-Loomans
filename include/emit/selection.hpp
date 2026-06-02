@@ -18,6 +18,7 @@ struct Selection : Statement {
   };
 
   std::vector<Option> options;
+  std::vector<std::shared_ptr<Statement>> else_stmts;
 
   explicit Selection(std::vector<Option> options = {})
     : options(std::move(options)) {}

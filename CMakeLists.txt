@@ -17,9 +17,12 @@ add_executable(mcrl22plc
   src/emit/assignment.cpp
   src/emit/binary.cpp
   src/emit/enum_type.cpp
+  src/emit/fb_call.cpp
   src/emit/function.cpp
+  src/emit/function_block.cpp
   src/emit/indentation.cpp
   src/emit/index.cpp
+  src/emit/iterate.cpp
   src/emit/reference.cpp
   src/emit/selection.cpp
   src/emit/struct_type.cpp
@@ -31,6 +34,7 @@ add_executable(mcrl22plc
   src/trans/maps.cpp
   src/trans/proc.cpp
   src/trans/sort.cpp
+  src/trans/ternary.cpp
 )
 target_include_directories(mcrl22plc PRIVATE
   include

@@ -29,13 +29,15 @@ std::shared_ptr<emit::Type> trans::trans_sort(const mcrl2::data::alias &alias)
         components.emplace_back(comp_name,
                                 gctx.types.at(comp_type));
       }
-      return std::make_shared<emit::StructType>(name, components);
+      auto ret = std::make_shared<emit::StructType>(name, components);
+      gctx.types.insert_or_assign(name, ret);
+      return ret;
     }
     else
     {
       // Is an enum type.
       auto options = std::vector<std::string>{};
-      for (const auto &con : stru.constructors())
+      for (size_t i = 0; const auto &con : stru.constructors())
       {
         assert(con.arguments().size() == 0 && "Constructors with arguments not implemented");
         options.push_back(con.name());
@@ -43,10 +45,12 @@ std::shared_ptr<emit::Type> trans::trans_sort(const mcrl2::data::alias &alias)
         auto recog = con.recogniser().function().name();
         if (recog.size() > 0)
           gctx.recognizers.insert_or_assign(
-            recog, std::make_shared<emit::Reference>(std::format("{}.{}", name, std::string(con.name())))
-          );
+              recog, std::make_shared<emit::Reference>(std::to_string(i)));
+        i++;
       }
-      return std::make_shared<emit::EnumType>(name, options);
+      auto ret = std::make_shared<emit::EnumType>("INT", options);
+      gctx.types.insert_or_assign(name, ret);
+      return ret;
     }
   }
   else if (mcrl2::data::is_function_sort(alias.reference()))
@@ -56,11 +60,16 @@ std::shared_ptr<emit::Type> trans::trans_sort(const mcrl2::data::alias &alias)
     assert(mcrl2::data::is_basic_sort(func.domain().front()));
     assert(mcrl2::data::is_basic_sort(func.codomain()));
 
-    std::cout << name << " - " << func.domain() << " - " << func.codomain() << '\n';
     auto domain = mcrl2::data::basic_sort(func.domain().front());
     auto range = mcrl2::data::basic_sort(func.codomain());
 
-    return std::make_shared<emit::ArrayType>(name, gctx.types.at(domain.name()), gctx.types.at(range.name()));
+    auto ret = std::make_shared<emit::ArrayType>(
+        gctx.types.at(domain.name()),
+        gctx.types.at(range.name()));
+
+    gctx.fa_types.insert_or_assign({domain.name(), range.name()}, ret);
+    gctx.types.insert_or_assign(name, ret);
+    return ret;
   }
   else
   {

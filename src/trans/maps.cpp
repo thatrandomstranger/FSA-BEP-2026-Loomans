@@ -25,11 +25,12 @@ std::shared_ptr<emit::Type> get_type(const mcrl2::data::sort_expression &exp,
 
 std::vector<emit::Function> trans::trans_maps(
     const mcrl2::lps::specification &spec,
-    Context &context)
+    const Context &context)
 {
   std::vector<emit::Function> ret;
   std::map<std::string, std::shared_ptr<emit::Selection>> selections;
   std::map<std::string, std::shared_ptr<emit::Type>> io_types;
+  std::map<std::string, std::vector<emit::Variable>> variables;
 
   for (const auto &map : spec.data().user_defined_mappings())
   {
@@ -41,7 +42,7 @@ std::vector<emit::Function> trans::trans_maps(
     }
     auto sort = mcrl2::data::function_sort(map.sort());
 
-    ret.push_back({.name = map.name(),
+    ret.push_back({.name = std::format("FC_Gen_{}", std::string(map.name())),
                    .type = get_type(sort.codomain(), context)});
     int index = 0;
 
@@ -51,7 +52,8 @@ std::vector<emit::Function> trans::trans_maps(
     auto sel = std::make_shared<emit::Selection>();
     ret.back().statements.push_back(sel);
     selections.insert_or_assign(map.name(), sel);
-    context.symbs.insert_or_assign(map.name(), map.name());
+    gctx.symbs.insert_or_assign(map.name(), ret.back().name);
+    variables.insert_or_assign(map.name(), ret.back().inputs);
 
     if (emit::ArrayType *at;
         ret.back().inputs.size() >= 1 && (at = dynamic_cast<emit::ArrayType *>(ret.back().inputs[0].type.get())) && (ret.back().type->name == at->name))
@@ -67,7 +69,9 @@ std::vector<emit::Function> trans::trans_maps(
     if (!mcrl2::data::is_application(eqn.lhs()))
     {
       auto con = mcrl2::data::function_symbol(eqn.lhs());
-      gctx.constants.insert_or_assign(con.name(), trans_expr(eqn.rhs(), context));
+      std::vector<std::shared_ptr<emit::Statement>> aux_stmts;
+      std::vector<emit::Variable> aux_vars;
+      gctx.constants.insert_or_assign(con.name(), trans_expr(eqn.rhs(), context, aux_stmts, aux_vars));
       continue;
     }
 
@@ -77,11 +81,16 @@ std::vector<emit::Function> trans::trans_maps(
 
     if (!selections.contains(op.name()))
     {
-      gctx.constants.insert_or_assign(op.name(), trans_expr(eqn.rhs(), context));
+      std::vector<std::shared_ptr<emit::Statement>> aux_stmts;
+      std::vector<emit::Variable> aux_vars;
+      gctx.constants.insert_or_assign(op.name(), trans_expr(eqn.rhs(), context, aux_stmts, aux_vars));
       continue;
     }
 
     auto eqn_context = context;
+    std::vector<std::shared_ptr<emit::Statement>> aux_stmts;
+    std::vector<emit::Variable> aux_vars;
+
     for (int i = 0; i < appl.size(); i++)
     {
       if (mcrl2::data::is_variable(appl[i]))
@@ -91,31 +100,31 @@ std::vector<emit::Function> trans::trans_maps(
           cond->values.push_back(std::make_shared<emit::Binary>(
               "=", std::vector<std::shared_ptr<emit::Expression>>{
                        std::make_shared<emit::Reference>(std::format("in_{}", i)),
-                       std::make_shared<emit::Reference>(eqn_context.vars.at(var.name()))}));
+                       std::make_shared<emit::Reference>("#" + eqn_context.vars.at(var.name()).name)}));
         else
-          eqn_context.vars.insert_or_assign(var.name(), std::format("in_{}", i));
+          eqn_context.vars.insert_or_assign(var.name(), variables.at(op.name())[i]);
       }
       else
       {
         cond->values.push_back(std::make_shared<emit::Binary>(
             "=", std::vector<std::shared_ptr<emit::Expression>>{
                      std::make_shared<emit::Reference>(std::format("in_{}", i)),
-                     trans_expr(appl[i], eqn_context)}));
+                     trans_expr(appl[i], eqn_context, aux_stmts, aux_vars)}));
       }
     }
-    cond->values.push_back(trans_expr(eqn.condition(), eqn_context));
+    cond->values.push_back(trans_expr(eqn.condition(), eqn_context, aux_stmts, aux_vars));
 
     auto &sel = *selections.at(op.name());
     auto statements = std::vector<std::shared_ptr<emit::Statement>>{};
     if (io_types.contains(op.name()))
     {
-      auto array = std::make_shared<emit::Reference>("in_0");
+      auto array = std::make_shared<emit::Reference>("#in_0");
       assert(mcrl2::data::is_application(eqn.rhs()));
       auto appl = mcrl2::data::application(eqn.rhs());
       assert(mcrl2::data::is_function_symbol(appl.head()));
       assert(std::string(mcrl2::data::function_symbol(appl.head()).name()) == "@func_update");
-      auto indexers = io_types.at(op.name())->get_indexers(trans_expr(appl[1], eqn_context));
-      auto value = trans_expr(appl[2], eqn_context);
+      auto indexers = io_types.at(op.name())->get_indexers(trans_expr(appl[1], eqn_context, aux_stmts, aux_vars));
+      auto value = trans_expr(appl[2], eqn_context, aux_stmts, aux_vars);
 
       statements.push_back(
         std::make_shared<emit::Assignment>(
@@ -129,7 +138,7 @@ std::vector<emit::Function> trans::trans_maps(
       statements.push_back(
           std::make_shared<emit::Assignment>(
               std::make_shared<emit::Reference>(op.name()),
-              trans_expr(eqn.rhs(), eqn_context)));
+              trans_expr(eqn.rhs(), eqn_context, aux_stmts, aux_vars)));
     }
     sel.options.emplace_back(std::move(cond), std::move(statements));
   }

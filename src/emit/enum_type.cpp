@@ -7,13 +7,13 @@
 using namespace emit;
 
 void EnumType::emit(std::ostream& os) const {
-  assert(options.size() >= 1);
-  os << indent << "TYPE " << name << " :\n";
-  os << indent++ << "(\n";
-  for (int i = 0; const auto& opt : options)
-    os << indent << opt <<  (++i < options.size() ? ",\n" : "\n");
-  os << --indent << ");\n";
-  os << indent << "END_TYPE\n";
+  // assert(options.size() >= 1);
+  // os << indent << "TYPE " << name << " : INT\n";
+  // // os << indent++ << "(\n";
+  // // for (int i = 0; const auto& opt : options)
+  // //   os << indent << opt <<  (++i < options.size() ? ",\n" : "\n");
+  // // os << --indent << ");\n";
+  // os << indent << "END_TYPE\n";
 }
 
 std::vector<int> EnumType::get_indexing() const {
@@ -22,9 +22,5 @@ std::vector<int> EnumType::get_indexing() const {
 
 std::vector<std::shared_ptr<Expression>> EnumType::get_indexers(
     std::shared_ptr<Expression> e) const {
-  static auto TO_INT = std::make_shared<Reference>("TO_INT");
-
-  return {
-    std::make_shared<Application>(TO_INT, std::vector{e})
-  };
+  return {e};
 }
