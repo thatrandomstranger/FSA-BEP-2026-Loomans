@@ -75,7 +75,7 @@ emit::FunctionBlock trans::trans_proc(
     Context context)
 {
   auto ret = emit::FunctionBlock{
-      .name = "P",
+      .name = "\"FB_Generated_Controller\"",
       .inputs = {
         emit::Variable("initialize", gctx.types.at("Bool")),
       },

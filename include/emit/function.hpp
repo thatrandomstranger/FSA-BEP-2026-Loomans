@@ -12,7 +12,7 @@ struct Function {
   std::vector<Variable> inputs;
   std::vector<std::shared_ptr<Statement>> statements = {};
   bool io = false;
-
+  std::vector<Variable> variables = {};
 
   void emit(std::ostream&) const;
 }; 

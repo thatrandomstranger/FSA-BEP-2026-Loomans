@@ -16,6 +16,13 @@ void Function::emit(std::ostream& os) const {
     os << var;
   os << --indent << "END_VAR\n\n";
 
+  if (variables.size() > 0) {
+    os << indent++ << "VAR_TEMP\n";
+    for (const auto& var : variables)
+      os << var;
+    os << --indent << "END_VAR\n\n";
+  }
+  
   os << indent << "BEGIN\n";
 
   for (const auto& st : statements)

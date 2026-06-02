@@ -31,6 +31,7 @@ std::vector<emit::Function> trans::trans_maps(
   std::map<std::string, std::shared_ptr<emit::Selection>> selections;
   std::map<std::string, std::shared_ptr<emit::Type>> io_types;
   std::map<std::string, std::vector<emit::Variable>> variables;
+  std::map<std::string, int> ret_indices;
 
   for (const auto &map : spec.data().user_defined_mappings())
   {
@@ -54,6 +55,7 @@ std::vector<emit::Function> trans::trans_maps(
     selections.insert_or_assign(map.name(), sel);
     gctx.symbs.insert_or_assign(map.name(), ret.back().name);
     variables.insert_or_assign(map.name(), ret.back().inputs);
+    ret_indices.insert_or_assign(map.name(), ret.size() - 1);
 
     if (emit::ArrayType *at;
         ret.back().inputs.size() >= 1 && (at = dynamic_cast<emit::ArrayType *>(ret.back().inputs[0].type.get())) && (ret.back().type->name == at->name))
@@ -69,9 +71,9 @@ std::vector<emit::Function> trans::trans_maps(
     if (!mcrl2::data::is_application(eqn.lhs()))
     {
       auto con = mcrl2::data::function_symbol(eqn.lhs());
-      std::vector<std::shared_ptr<emit::Statement>> aux_stmts;
-      std::vector<emit::Variable> aux_vars;
-      gctx.constants.insert_or_assign(con.name(), trans_expr(eqn.rhs(), context, aux_stmts, aux_vars));
+      std::vector<std::shared_ptr<emit::Statement>> _aux_stmts;
+      std::vector<emit::Variable> _aux_vars;
+      gctx.constants.insert_or_assign(con.name(), trans_expr(eqn.rhs(), context, _aux_stmts, _aux_vars));
       continue;
     }
 
@@ -81,13 +83,14 @@ std::vector<emit::Function> trans::trans_maps(
 
     if (!selections.contains(op.name()))
     {
-      std::vector<std::shared_ptr<emit::Statement>> aux_stmts;
-      std::vector<emit::Variable> aux_vars;
-      gctx.constants.insert_or_assign(op.name(), trans_expr(eqn.rhs(), context, aux_stmts, aux_vars));
+      std::vector<std::shared_ptr<emit::Statement>> _aux_stmts;
+      std::vector<emit::Variable> _aux_vars;
+      gctx.constants.insert_or_assign(op.name(), trans_expr(eqn.rhs(), context, _aux_stmts, _aux_vars));
       continue;
     }
 
     auto eqn_context = context;
+    std::vector<std::shared_ptr<emit::Statement>> cond_aux_stmts;
     std::vector<std::shared_ptr<emit::Statement>> aux_stmts;
     std::vector<emit::Variable> aux_vars;
 
@@ -109,10 +112,11 @@ std::vector<emit::Function> trans::trans_maps(
         cond->values.push_back(std::make_shared<emit::Binary>(
             "=", std::vector<std::shared_ptr<emit::Expression>>{
                      std::make_shared<emit::Reference>(std::format("in_{}", i)),
-                     trans_expr(appl[i], eqn_context, aux_stmts, aux_vars)}));
+                     trans_expr(appl[i], eqn_context, cond_aux_stmts, aux_vars)}));
       }
     }
-    cond->values.push_back(trans_expr(eqn.condition(), eqn_context, aux_stmts, aux_vars));
+
+    cond->values.push_back(trans_expr(eqn.condition(), eqn_context, cond_aux_stmts, aux_vars));
 
     auto &sel = *selections.at(op.name());
     auto statements = std::vector<std::shared_ptr<emit::Statement>>{};
@@ -137,9 +141,20 @@ std::vector<emit::Function> trans::trans_maps(
     {
       statements.push_back(
           std::make_shared<emit::Assignment>(
-              std::make_shared<emit::Reference>(op.name()),
+              std::make_shared<emit::Reference>("#" + std::string(op.name())),
               trans_expr(eqn.rhs(), eqn_context, aux_stmts, aux_vars)));
     }
+
+    ret[ret_indices.at(op.name())].statements.insert(
+      ret[ret_indices.at(op.name())].statements.begin(),
+      cond_aux_stmts.begin(), cond_aux_stmts.end());
+    ret[ret_indices.at(op.name())].variables.insert(
+      ret[ret_indices.at(op.name())].variables.begin(),
+      aux_vars.begin(), aux_vars.end());
+    statements.insert(
+      statements.begin(),
+      aux_stmts.begin(), aux_stmts.end());
+
     sel.options.emplace_back(std::move(cond), std::move(statements));
   }
 

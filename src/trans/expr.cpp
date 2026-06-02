@@ -25,6 +25,8 @@ std::shared_ptr<emit::Expression> trans::trans_expr(
     auto var = mcrl2::data::variable(expr);
     if (context.vars.contains(var.name())) 
       return std::make_shared<emit::Reference>("#" + context.vars.at(var.name()).name);
+  } else if (mcrl2::data::is_forall(expr) || mcrl2::data::is_exists(expr)) {
+    return trans_binder(mcrl2::data::abstraction(expr), context, aux_stmts, aux_vars);
   }
 
   std::cerr << "UNKN: " << expr << " - " <<  expr.function() << std::endl;

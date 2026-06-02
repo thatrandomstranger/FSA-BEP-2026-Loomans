@@ -76,4 +76,11 @@ std::shared_ptr<emit::Expression> get_ternary(
   const Context& context
 );
 
+std::shared_ptr<emit::Expression> trans_binder(
+  const mcrl2::data::abstraction&,
+  Context,
+  std::vector<std::shared_ptr<emit::Statement>>& aux_stmts,
+  std::vector<emit::Variable>& aux_vars
+);
+
 }

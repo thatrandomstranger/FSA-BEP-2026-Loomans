@@ -30,6 +30,7 @@ add_executable(mcrl22plc
   src/emit/variable.cpp
 
   src/trans/appl.cpp
+  src/trans/binder.cpp
   src/trans/expr.cpp
   src/trans/maps.cpp
   src/trans/proc.cpp
