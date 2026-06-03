@@ -11,7 +11,7 @@
 using namespace trans;
 
 static const std::map<std::string, std::string> binary_operators{
-    {">", ">"}, {"<", "<"}, {">=", ">="}, {"<=", "<="}, {"+", "+"}, {"-", "-"}, {"&&", "AND"}, {"||", "OR"}, {"==", "="}};
+    {">", ">"}, {"<", "<"}, {">=", ">="}, {"<=", "<="}, {"+", "+"}, {"-", "-"}, {"&&", "AND"}, {"||", "OR"}, {"==", "="}, {"!=", "!="}};
 
 static const std::set<std::string> ignore{
     "@most_significant_digitNat", "@most_significant_digit", "Pos2Nat"};
@@ -96,9 +96,13 @@ std::shared_ptr<emit::Expression> trans::trans_appl(
     }
     else if (name == "if")
     {
-      return std::make_shared<emit::Application>(
-          get_ternary(appl, context),
-          args);
+      return std::make_shared<emit::FBCall>(
+          get_ternary(appl, context)->ref,
+           std::vector<emit::FBCall::Argument>{
+            {"c", args[0], true},
+            {"e1", args[1], true},
+            {"e0", args[2], true}
+          });
     }
   }
 

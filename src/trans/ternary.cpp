@@ -5,7 +5,7 @@
 
 using namespace trans;
 
-std::shared_ptr<emit::Expression> trans::get_ternary(
+std::shared_ptr<emit::Reference> trans::get_ternary(
   const mcrl2::data::application& appl,
   const Context& context
 ) {

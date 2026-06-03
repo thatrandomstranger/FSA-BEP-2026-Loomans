@@ -126,6 +126,10 @@ emit::FunctionBlock trans::trans_proc(
       std::make_shared<emit::Assignment>(
           std::make_shared<emit::Reference>("#execute"),
           std::make_shared<emit::Reference>("TRUE")));
+  selection->options.back().statements.push_back(
+      std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>("#initialize"),
+          std::make_shared<emit::Reference>("FALSE")));
   std::vector<emit::Variable> aux_vars;
   for (auto i = variables_start_parameters; auto arg : init.expressions())
   {
@@ -202,6 +206,12 @@ emit::FunctionBlock trans::trans_proc(
         std::make_shared<emit::Assignment>(
             std::make_shared<emit::Reference>("#execute"),
             std::make_shared<emit::Reference>("TRUE")));
+    
+    if (action.fb.size() > 0)
+      stmts_done.push_back(
+          std::make_shared<emit::Assignment>(
+              std::make_shared<emit::Reference>(action.fb + ".Execute"),
+              std::make_shared<emit::Reference>("FALSE")));
 
     for (int i = 0; i < action.params.size(); i++)
     {

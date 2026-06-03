@@ -8,6 +8,7 @@
 #include "emit/function_block.hpp"
 #include "emit/expression.hpp"
 #include "emit/type.hpp"
+#include "emit/reference.hpp"
 
 namespace trans {
 
@@ -73,7 +74,7 @@ emit::FunctionBlock trans_proc(
   Context
 );
 
-std::shared_ptr<emit::Expression> get_ternary(
+std::shared_ptr<emit::Reference> get_ternary(
   const mcrl2::data::application& appl,
   const Context& context
 );

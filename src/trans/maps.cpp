@@ -15,6 +15,10 @@ using namespace trans;
 std::shared_ptr<emit::Type> get_type(const mcrl2::data::sort_expression &exp,
                                      const Context &context)
 {
+  if (!mcrl2::data::is_basic_sort(exp)) {
+    return std::make_shared<emit::RefType>(
+        std::format("_unk_{}", std::string{mcrl2::data::pp(exp)}));
+  }
   auto basic = mcrl2::data::basic_sort(exp);
   if (gctx.types.contains(basic.name()))
     return gctx.types.at(basic.name());
@@ -155,7 +159,7 @@ std::vector<emit::Function> trans::trans_maps(
     {
       statements.push_back(
           std::make_shared<emit::Assignment>(
-              std::make_shared<emit::Reference>("#" + std::string(op.name())),
+              std::make_shared<emit::Reference>("#FC_Gen_" + std::string(op.name())),
               trans_expr(eqn.rhs(), eqn_context, aux_stmts, aux_vars)));
     }
 

@@ -77,7 +77,7 @@ void prune_unused_equations(mcrl2::lps::specification& spec)
 }
 
 int main() {
-  const auto text = read_file("/home/milu/University/BFP/test/simple.mcrl2");
+  const auto text = read_file("/home/milu/University/BFP/test/robot.mcrl2");
 
   mcrl2::lps::t_lin_options lin_options{};
   lin_options.ignore_time = true;
@@ -85,6 +85,7 @@ int main() {
   lin_options.norewrite = true;
   lin_options.do_not_apply_constelm = true;
   lin_options.apply_alphabet_axioms = false;
+  lin_options.binary = true;
 
   auto lin = mcrl2::lps::linearise(text, lin_options);
 
@@ -94,7 +95,7 @@ int main() {
   // mcrl2::data::rewriter rewriter(spec.data(), mcrl2::data::jitty);
   // mcrl2::lps::constelm(spec, rewriter, false);
 
-  std::cout << spec << std::endl;
+  std::cerr << spec << std::endl;
   // return 0;
 
   auto config = YAML::LoadFile("../../test/config_new.yaml");
@@ -160,9 +161,10 @@ int main() {
   auto maps = trans::trans_maps(spec, {});
   auto proc = trans::trans_proc(spec.process(), spec.initial_process(), {});
 
+  std::cerr << "Ensure the following sorts are defined:\n";
   for (const auto& s : sorts)
-    std::cout << *s;
-  std::cout << '\n';
+    std::cerr << *s;
+  std::cerr << '\n';
   for (const auto& f : trans::gctx.aux_functions)
     std::cout << f << '\n';
   for (const auto& m : maps)
