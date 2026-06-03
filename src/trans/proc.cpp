@@ -32,36 +32,34 @@ static std::vector<std::shared_ptr<emit::Statement>> trans_assignment(
     }
     else
     {
-      
+
       auto iterate = std::make_shared<emit::Iterate>();
       auto indexing = arr_type->domain->get_indexing_bounded();
       auto index = std::make_shared<emit::Index>(
-        std::make_shared<emit::Reference>("#" + var.name));
-      for (int i = 0; auto dim : indexing) {
+          std::make_shared<emit::Reference>("#" + var.name));
+      for (int i = 0; auto dim : indexing)
+      {
         auto iter = std::format("iter_{}", i++);
         aux_vars.push_back({iter, gctx.types.at("Nat")});
         iterate->dims.push_back({dim, iter});
-        index->indexers.push_back(std::make_shared<emit::Reference>(iter));
+        index->indexers.push_back(std::make_shared<emit::Reference>("#" + iter));
       }
       iterate->stmts.push_back(
-        std::make_shared<emit::Assignment>(
-          index, trans_expr(rhs, context, stmts, aux_vars)
-        )
-      );
+          std::make_shared<emit::Assignment>(
+              index, trans_expr(rhs, context, stmts, aux_vars)));
       stmts.push_back(iterate);
     }
   }
-  else if (auto stype = dynamic_cast<emit::StructType *>(var.type.get()); stype 
-    && mcrl2::data::is_application(rhs))
+  else if (auto stype = dynamic_cast<emit::StructType *>(var.type.get()); stype && mcrl2::data::is_application(rhs))
   {
     auto con = mcrl2::data::application(rhs);
 
-    for (size_t i = 0; auto p : con) {
+    for (size_t i = 0; auto p : con)
+    {
       stmts.push_back(
-        std::make_shared<emit::Assignment>(
-          std::make_shared<emit::Reference>("#" + var.name + "." + stype->components[i++].first),
-          trans_expr(p, context, stmts, aux_vars))
-      );
+          std::make_shared<emit::Assignment>(
+              std::make_shared<emit::Reference>("#" + var.name + "." + stype->components[i++].first),
+              trans_expr(p, context, stmts, aux_vars)));
     }
     return stmts;
   }
@@ -76,18 +74,18 @@ static std::vector<std::shared_ptr<emit::Statement>> trans_assignment(
 
 emit::FunctionBlock trans::trans_proc(
     const mcrl2::lps::linear_process &proc,
-    const mcrl2::lps::process_initializer& init,
+    const mcrl2::lps::process_initializer &init,
     Context context)
 {
   auto ret = emit::FunctionBlock{
       .name = "\"FB_Generated_Controller\"",
       .inputs = {
-        emit::Variable("initialize", gctx.types.at("Bool")),
+          emit::Variable("initialize", gctx.types.at("Bool")),
       },
       .outputs = {
-        emit::Variable("error", gctx.types.at("Bool")),
+          emit::Variable("error", gctx.types.at("Bool")),
       },
-      .variables = {emit::Variable("execute", gctx.types.at("Bool")), emit::Variable("done", gctx.types.at("Bool"))},
+      .variables = {emit::Variable("execute", gctx.types.at("Bool"))},
   };
 
   size_t variables_start_parameters = ret.variables.size();
@@ -128,15 +126,20 @@ emit::FunctionBlock trans::trans_proc(
           std::make_shared<emit::Reference>("#execute"),
           std::make_shared<emit::Reference>("TRUE")));
   std::vector<emit::Variable> aux_vars;
-  for (auto i = variables_start_parameters; auto arg : init.expressions()) {
+  for (auto i = variables_start_parameters; auto arg : init.expressions())
+  {
     for (auto st : trans_assignment(ret.variables[i++], arg, context, aux_vars))
-      {
-        selection->options.front().statements.push_back(std::move(st));
-      }
+    {
+      selection->options.front().statements.push_back(std::move(st));
+    }
   }
+  selection->options.front().statements.push_back(
+      std::make_shared<emit::Reference>("RETURN"));
 
   for (auto sum : proc.action_summands())
   {
+    auto selection = std::make_shared<emit::Selection>();
+
     for (auto var : sum.summation_variables())
     {
       ret.variables.push_back(emit::Variable{
@@ -155,32 +158,64 @@ emit::FunctionBlock trans::trans_proc(
       continue;
     }
     auto action = gctx.actions.at(action_name);
-    auto fb_call = std::make_shared<emit::FBCall>(action.fb);
-    for (int i = 0; auto a : action_args)
+    if (action.fb.size() > 0)
     {
-      if (i >= action.params.size())
-        break;
-      fb_call->parameters.push_back(
-          {.name = action.params[i].name,
-           .arg = trans_expr(a, context, aux_stmts, aux_vars),
-           .is_input = action.params[i].is_input});
-      i++;
+      auto on_execute = std::make_shared<emit::Selection>();
+      on_execute->options.push_back({std::make_shared<emit::Reference>("#execute")});
+      auto &stmts_execute = on_execute->options.back().statements;
+      stmts_execute.push_back(std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>("#execute"),
+          std::make_shared<emit::Reference>("FALSE")));
+      stmts_execute.push_back(std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>(action.fb + ".Execute"),
+          std::make_shared<emit::Reference>("TRUE")));
+      for (int i = 0; i < action.params.size(); i++)
+      {
+        if (!action.params[i].is_input)
+          continue;
+        auto pvar = std::make_shared<emit::Reference>(
+          (action.fb.size() > 0 ? action.fb + "." : "") + action.params[i].name);
+        auto te = trans_expr(mcrl2::data::data_expression(action_args[action.params[i].id]), context, aux_stmts, aux_vars);
+        if (action.params[i].transform.size() > 0)
+        {
+          std::stringstream s;
+          s << *te;
+          auto ts = action.params[i].transform;
+          ts.replace(ts.find('$'), 1, s.str());
+          te = std::make_shared<emit::Reference>(ts);
+        }
+        stmts_execute.push_back(std::make_shared<emit::Assignment>(pvar, te));
+      }
+      option.statements.push_back(on_execute);
     }
-    fb_call->parameters.push_back({.name = "execute",
-                                   .arg = std::make_shared<emit::Reference>("#execute"),
-                                   .is_input = true});
-    fb_call->parameters.push_back({.name = "done",
-                                   .arg = std::make_shared<emit::Reference>("#done"),
-                                   .is_input = false});
-
-    option.statements.push_back(std::move(fb_call));
 
     auto on_done = std::make_shared<emit::Selection>();
-    on_done->options.push_back({std::make_shared<emit::Reference>("#done")});
-    on_done->options.back().statements.push_back(
+    if (action.fb.size() > 0)
+      on_done->options.push_back({std::make_shared<emit::Reference>(action.fb + ".Done")});
+    else
+      on_done->options.push_back({std::make_shared<emit::Reference>(action.cond)});
+    auto &stmts_done = on_done->options.back().statements;
+    stmts_done.push_back(
         std::make_shared<emit::Assignment>(
             std::make_shared<emit::Reference>("#execute"),
             std::make_shared<emit::Reference>("TRUE")));
+
+    for (int i = 0; i < action.params.size(); i++)
+    {
+      if (action.params[i].is_input)
+        continue;
+      auto pvar = std::make_shared<emit::Reference>(action.fb + "." + action.params[i].name);
+      auto te = trans_expr(mcrl2::data::data_expression(action_args[action.params[i].id]), context, aux_stmts, aux_vars);
+      if (action.params[i].transform.size() > 0)
+      {
+        std::stringstream s;
+        s << *te;
+        auto ts = action.params[i].transform;
+        ts.replace(ts.find('$'), 1, s.str());
+        te = std::make_shared<emit::Reference>(ts);
+      }
+      stmts_done.push_back(std::make_shared<emit::Assignment>(te, pvar));
+    }
     for (auto da : sum.assignments())
     {
       assert(mcrl2::data::is_variable(da.lhs()));
@@ -188,18 +223,20 @@ emit::FunctionBlock trans::trans_proc(
 
       for (auto st : trans_assignment(var, da.rhs(), context, aux_vars))
       {
-        on_done->options.back().statements.push_back(std::move(st));
+        stmts_done.push_back(std::move(st));
       }
     }
-    on_done->options.back().statements.push_back(
-        std::make_shared<emit::Reference>("RETURN"));
 
     option.statements.push_back(std::move(on_done));
+    option.statements.push_back(
+        std::make_shared<emit::Reference>("RETURN"));
     selection->options.push_back(std::move(option));
+    ret.statements.push_back(selection);
   }
 
   std::set<std::string> aux_vars_seen;
-  for (const auto& var : aux_vars) {
+  for (const auto &var : aux_vars)
+  {
     if (aux_vars_seen.contains(var.name))
       continue;
     ret.variables.push_back(var);

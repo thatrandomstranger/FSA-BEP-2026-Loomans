@@ -108,10 +108,12 @@ int main() {
     for (auto p : a["parameters"]) {
       if (p["input"])
         parameters.push_back({p["input"].as<std::string>(), true,
-          p["transform"] ? p["transform"].as<std::string>() : ""});
+          p["transform"] ? p["transform"].as<std::string>() : "",
+        p["id"] ? p["id"].as<int>() : 0});
       else if (p["output"])
         parameters.push_back({p["output"].as<std::string>(), false,
-          p["transform"] ? p["transform"].as<std::string>() : ""});
+          p["transform"] ? p["transform"].as<std::string>() : "",
+        p["id"] ? p["id"].as<int>() : 0});
     }
 
     trans::gctx.actions.insert_or_assign(
@@ -148,7 +150,7 @@ int main() {
     if (auto et = dynamic_cast<emit::EnumType*>(sorts.back().get())) {
       for (size_t i = 0; const auto op : et->options)
         trans::gctx.symbs.insert_or_assign(op, 
-          std::format("{}", i));
+          std::format("{}", i++));
     } else if (auto st = dynamic_cast<emit::StructType*>(sorts.back().get())) {
       for (const auto comp : st->components)
         trans::gctx.struct_comps.insert(comp.first);

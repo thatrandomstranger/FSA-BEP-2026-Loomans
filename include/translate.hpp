@@ -16,6 +16,7 @@ struct Action {
     std::string name;
     bool is_input;
     std::string transform;
+    int id;
   };
 
   std::string fb;
