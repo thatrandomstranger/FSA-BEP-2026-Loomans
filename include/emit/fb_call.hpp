@@ -1,12 +1,11 @@
 #pragma once
-#include "emit/statement.hpp"
 #include "emit/expression.hpp"
 #include <memory>
 #include <vector>
 
 namespace emit {
 
-struct FBCall : Statement {
+struct FBCall : Expression {
   struct Argument {
     std::string name;
     std::shared_ptr<Expression> arg;

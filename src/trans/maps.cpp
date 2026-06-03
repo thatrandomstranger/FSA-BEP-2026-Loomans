@@ -64,6 +64,8 @@ std::vector<emit::Function> trans::trans_maps(
       ret.back().inputs.erase(ret.back().inputs.begin());
       io_types.insert_or_assign(std::string(map.name()), ret.back().inputs[0].type);
     }
+
+    gctx.func_symbs.insert_or_assign(map.name(), ret.back());
   }
 
   for (const auto &eqn : spec.data().user_defined_equations())

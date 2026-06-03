@@ -8,10 +8,10 @@ void FBCall::emit(std::ostream &os) const
 {
   if (parameters.size() == 0)
   {
-    os << indent << fb << "();\n";
+    os << fb << "()";
     return;
   }
-  os << indent << fb << '('
+  os << fb << '('
      << parameters[0].name
      << (parameters[0].is_input ? " := " : " => ")
      << *parameters[0].arg;
@@ -19,5 +19,5 @@ void FBCall::emit(std::ostream &os) const
     os << ", " << parameters[i].name
        << (parameters[i].is_input ? " := " : " => ")
        << *parameters[i].arg;
-  os << ");\n";
+  os << ")";
 }

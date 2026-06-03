@@ -31,6 +31,7 @@ struct GlobalContext {
   std::map<std::string, std::shared_ptr<emit::Expression>> constants = {};
   std::map<std::string, std::shared_ptr<emit::Expression>> recognizers = {};
   std::map<std::string, std::string> symbs = {};
+  std::map<std::string, emit::Function> func_symbs = {};
   std::vector<emit::Function> aux_functions = {};
 
   std::map<std::string, Action> actions = {}; 
