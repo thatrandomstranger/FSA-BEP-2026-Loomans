@@ -9,6 +9,7 @@
 #include "emit/assignment.hpp"
 #include "emit/array_type.hpp"
 #include "emit/struct_type.hpp"
+#include "emit/enum_type.hpp"
 #include "emit/iterate.hpp"
 #include "emit/index.hpp"
 
@@ -140,12 +141,14 @@ emit::FunctionBlock trans::trans_proc(
   {
     auto selection = std::make_shared<emit::Selection>();
 
+    std::set<std::string> svars;
     for (auto var : sum.summation_variables())
     {
       ret.variables.push_back(emit::Variable{
           var.name(),
           gctx.types.at(mcrl2::data::basic_sort(var.sort()).name())});
       context.vars.insert_or_assign(var.name(), ret.variables.back());
+      svars.insert(var.name());
     }
 
     std::vector<std::shared_ptr<emit::Statement>> aux_stmts;
@@ -174,7 +177,7 @@ emit::FunctionBlock trans::trans_proc(
         if (!action.params[i].is_input)
           continue;
         auto pvar = std::make_shared<emit::Reference>(
-          (action.fb.size() > 0 ? action.fb + "." : "") + action.params[i].name);
+            (action.fb.size() > 0 ? action.fb + "." : "") + action.params[i].name);
         auto te = trans_expr(mcrl2::data::data_expression(action_args[action.params[i].id]), context, aux_stmts, aux_vars);
         if (action.params[i].transform.size() > 0)
         {
@@ -204,7 +207,11 @@ emit::FunctionBlock trans::trans_proc(
     {
       if (action.params[i].is_input)
         continue;
-      auto pvar = std::make_shared<emit::Reference>(action.fb + "." + action.params[i].name);
+      auto pvar = std::make_shared<emit::Reference>(
+          (action.fb.size() > 0 ? action.fb + "." : "") + action.params[i].name);
+      assert(mcrl2::data::is_variable(action_args[action.params[i].id]));
+      auto tvar = mcrl2::data::variable(action_args[action.params[i].id]);
+      svars.extract(tvar.name());
       auto te = trans_expr(mcrl2::data::data_expression(action_args[action.params[i].id]), context, aux_stmts, aux_vars);
       if (action.params[i].transform.size() > 0)
       {
@@ -231,7 +238,45 @@ emit::FunctionBlock trans::trans_proc(
     option.statements.push_back(
         std::make_shared<emit::Reference>("RETURN"));
     selection->options.push_back(std::move(option));
-    ret.statements.push_back(selection);
+    std::shared_ptr<emit::Statement> sumst = selection;
+    for (auto var : sum.summation_variables())
+    {
+      if (!svars.contains(var.name()))
+        continue;
+      auto tvar = context.vars.at(var.name());
+      auto iter = std::make_shared<emit::Iterate>();
+      if (auto etype = dynamic_cast<emit::EnumType *>(tvar.type.get()))
+      {
+        iter->dims.emplace_back(etype->options.size(), tvar.name);
+      }
+      else if (auto stype = dynamic_cast<emit::StructType *>(tvar.type.get()))
+      {
+        auto indexing = stype->get_indexing_bounded();
+        for (int i = 0; auto dim : indexing)
+        {
+          aux_vars.push_back({std::format("iter_{}", i), gctx.types.at("Nat")});
+          auto comp = std::make_shared<emit::Reference>(
+              std::format("#{}.{}", tvar.name, stype->components[i].first));
+          iter->dims.push_back({dim, std::format("iter_{}", i), comp});
+          i++;
+        }
+      }
+      else if (tvar.type->name == "BOOL")
+      {
+        aux_vars.push_back({"iter_0", gctx.types.at("Nat")});
+        iter->dims.emplace_back(2, "iter_0");
+        iter->stmts.push_back(std::make_shared<emit::Assignment>(
+            std::make_shared<emit::Reference>("#" + tvar.name),
+            std::make_shared<emit::Reference>("#iter_0 = 1")));
+      }
+      else
+      {
+        throw std::runtime_error(std::format("Unsupported summation on type {}", tvar.name));
+      }
+      iter->stmts.push_back(sumst);
+      sumst = iter;
+    }
+    ret.statements.push_back(sumst);
   }
 
   std::set<std::string> aux_vars_seen;

@@ -65,6 +65,20 @@ std::vector<emit::Function> trans::trans_maps(
       io_types.insert_or_assign(std::string(map.name()), ret.back().inputs[0].type);
     }
 
+    if (!ret.back().io)
+    {
+      if (ret.back().type->name == "INT")
+        sel->else_stmts.push_back(std::make_shared<emit::Assignment>(
+            std::make_shared<emit::Reference>("#" + ret.back().name),
+            std::make_shared<emit::Reference>("0")));
+      else if (ret.back().type->name == "BOOL")
+        sel->else_stmts.push_back(std::make_shared<emit::Assignment>(
+            std::make_shared<emit::Reference>("#" + ret.back().name),
+            std::make_shared<emit::Reference>("FALSE")));
+      else
+        throw std::runtime_error("Unsupported default return for type " + ret.back().type->name);
+    }
+
     gctx.func_symbs.insert_or_assign(map.name(), ret.back());
   }
 
@@ -133,11 +147,9 @@ std::vector<emit::Function> trans::trans_maps(
       auto value = trans_expr(appl[2], eqn_context, aux_stmts, aux_vars);
 
       statements.push_back(
-        std::make_shared<emit::Assignment>(
-          std::make_shared<emit::Index>(array, indexers),
-          value
-        )
-      );
+          std::make_shared<emit::Assignment>(
+              std::make_shared<emit::Index>(array, indexers),
+              value));
     }
     else
     {
@@ -148,14 +160,14 @@ std::vector<emit::Function> trans::trans_maps(
     }
 
     ret[ret_indices.at(op.name())].statements.insert(
-      ret[ret_indices.at(op.name())].statements.begin(),
-      cond_aux_stmts.begin(), cond_aux_stmts.end());
+        ret[ret_indices.at(op.name())].statements.begin(),
+        cond_aux_stmts.begin(), cond_aux_stmts.end());
     ret[ret_indices.at(op.name())].variables.insert(
-      ret[ret_indices.at(op.name())].variables.begin(),
-      aux_vars.begin(), aux_vars.end());
+        ret[ret_indices.at(op.name())].variables.begin(),
+        aux_vars.begin(), aux_vars.end());
     statements.insert(
-      statements.begin(),
-      aux_stmts.begin(), aux_stmts.end());
+        statements.begin(),
+        aux_stmts.begin(), aux_stmts.end());
 
     sel.options.emplace_back(std::move(cond), std::move(statements));
   }

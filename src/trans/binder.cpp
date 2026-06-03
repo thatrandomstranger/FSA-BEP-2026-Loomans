@@ -30,7 +30,7 @@ std::shared_ptr<emit::Expression> trans::trans_binder(
       aux_vars.push_back({std::format("iter_{}", i), gctx.types.at("Nat")});
       auto comp = std::make_shared<emit::Reference>(
           std::format("#binder_var.{}", stype->components[i].first));
-      iterate->dims.push_back({dim, std::format("#iter_{}", i), comp});
+      iterate->dims.push_back({dim, std::format("iter_{}", i), comp});
       i++;
     }
   }

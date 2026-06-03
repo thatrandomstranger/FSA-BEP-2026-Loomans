@@ -50,7 +50,7 @@ std::shared_ptr<emit::Expression> trans::trans_appl(
           io = false;
           continue;
         }
-        ret->parameters.emplace_back(func.inputs[i].name, a, true);
+        ret->parameters.emplace_back(func.inputs[i++].name, a, true);
       }
       return ret;
     }
