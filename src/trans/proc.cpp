@@ -12,6 +12,7 @@
 #include "emit/enum_type.hpp"
 #include "emit/iterate.hpp"
 #include "emit/index.hpp"
+#include "emit/member_access.hpp"
 
 using namespace trans;
 
@@ -54,15 +55,19 @@ static std::vector<std::shared_ptr<emit::Statement>> trans_assignment(
   else if (auto stype = dynamic_cast<emit::StructType *>(var.type.get()); stype && mcrl2::data::is_application(rhs))
   {
     auto con = mcrl2::data::application(rhs);
-
-    for (size_t i = 0; auto p : con)
+    auto fs = mcrl2::data::function_symbol(con.head());
+    if (gctx.constructors.contains(fs.name()))
     {
-      stmts.push_back(
-          std::make_shared<emit::Assignment>(
-              std::make_shared<emit::Reference>("#" + var.name + "." + stype->components[i++].first),
-              trans_expr(p, context, stmts, aux_vars)));
+      for (size_t i = 0; auto p : con)
+      {
+        stmts.push_back(
+            std::make_shared<emit::Assignment>(
+                std::make_shared<emit::Reference>("#" + var.name + "." + stype->components[i++].first),
+                trans_expr(p, context, stmts, aux_vars)));
+      }
+      // TODO: Add case for 'if' or other expressions.
+      return stmts;
     }
-    return stmts;
   }
   else
   {
@@ -132,20 +137,24 @@ emit::FunctionBlock trans::trans_proc(
   }
 
   selection->options.back().statements.push_back(
-    std::make_shared<emit::Assignment>(
-        std::make_shared<emit::Reference>("#execute"),
-        std::make_shared<emit::Reference>("TRUE")));
+      std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>("#execute"),
+          std::make_shared<emit::Reference>("TRUE")));
   selection->options.back().statements.push_back(
-    std::make_shared<emit::Assignment>(
-        std::make_shared<emit::Reference>("\"FC_Action_Initialize_DB\".Execute"),
-        std::make_shared<emit::Reference>("TRUE")));
+      std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>("\"FB_Action_Initialize_DB\".Execute"),
+          std::make_shared<emit::Reference>("TRUE")));
 
   auto on_done = std::make_shared<emit::Selection>();
-  on_done->options.emplace_back(std::make_shared<emit::Reference>("TRUE"));
+  on_done->options.emplace_back(std::make_shared<emit::Reference>("\"FB_Action_Initialize_DB\".Done"));
 
   on_done->options.back().statements.push_back(
       std::make_shared<emit::Assignment>(
           std::make_shared<emit::Reference>("#initialize"),
+          std::make_shared<emit::Reference>("FALSE")));
+  on_done->options.back().statements.push_back(
+      std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>("\"FB_Action_Initialize_DB\".Execute"),
           std::make_shared<emit::Reference>("FALSE")));
 
   selection->options.front().statements.push_back(on_done);
@@ -208,7 +217,8 @@ emit::FunctionBlock trans::trans_proc(
     }
 
     auto cond = action.cond;
-    if (action.fb.size() == 0) {
+    if (action.fb.size() == 0)
+    {
       for (int i = 0; i < action.params.size(); i++)
       {
         if (!action.params[i].is_input)
@@ -231,7 +241,7 @@ emit::FunctionBlock trans::trans_proc(
         std::make_shared<emit::Assignment>(
             std::make_shared<emit::Reference>("#execute"),
             std::make_shared<emit::Reference>("TRUE")));
-    
+
     if (action.fb.size() > 0)
       stmts_done.push_back(
           std::make_shared<emit::Assignment>(

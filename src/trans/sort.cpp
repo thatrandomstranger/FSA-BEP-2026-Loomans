@@ -31,6 +31,7 @@ std::shared_ptr<emit::Type> trans::trans_sort(const mcrl2::data::alias &alias)
       }
       auto ret = std::make_shared<emit::StructType>(name, components);
       gctx.types.insert_or_assign(name, ret);
+      gctx.constructors.insert_or_assign(con.name(), ret);
       return ret;
     }
     else

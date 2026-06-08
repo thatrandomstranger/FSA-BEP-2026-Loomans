@@ -7,7 +7,7 @@
 #include "emit/function.hpp"
 #include "emit/function_block.hpp"
 #include "emit/expression.hpp"
-#include "emit/type.hpp"
+#include "emit/struct_type.hpp"
 #include "emit/reference.hpp"
 
 namespace trans {
@@ -34,6 +34,7 @@ struct GlobalContext {
   std::map<std::string, std::shared_ptr<emit::Expression>> recognizers = {};
   std::map<std::string, std::string> symbs = {};
   std::map<std::string, emit::Function> func_symbs = {};
+  std::map<std::string, std::shared_ptr<emit::StructType>> constructors = {};
   std::vector<emit::Function> aux_functions = {};
 
   std::map<std::string, Action> actions = {}; 

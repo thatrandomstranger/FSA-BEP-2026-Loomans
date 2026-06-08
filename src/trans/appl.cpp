@@ -32,12 +32,8 @@ std::shared_ptr<emit::Expression> trans::trans_appl(
   {
     auto symb = mcrl2::data::function_symbol(appl.head());
     auto name = std::string(symb.name());
-    if (binary_operators.contains(name))
-    {
-      assert(args.size() == 2);
-      return std::make_shared<emit::Binary>(binary_operators.at(name), args);
-    }
-    else if (gctx.func_symbs.contains(name))
+
+    if (gctx.func_symbs.contains(name))
     {
       auto func = gctx.func_symbs.at(name);
       auto ret = std::make_shared<emit::FBCall>(func.name);
@@ -69,6 +65,27 @@ std::shared_ptr<emit::Expression> trans::trans_appl(
     {
       return std::make_shared<emit::MemberAccessExpression>(args[0], name);
     }
+    else if (name == "==" && mcrl2::data::is_application(appl[1]) &&
+             mcrl2::data::is_function_symbol(mcrl2::data::application(appl[1]).head()) && gctx.constructors.contains(mcrl2::data::function_symbol(mcrl2::data::application(appl[1]).head()).name()))
+    {
+      auto appl2 = mcrl2::data::application(appl[1]);
+      auto stype = gctx.constructors.at(mcrl2::data::function_symbol(appl2.head()).name());
+      auto ret = std::make_shared<emit::Binary>("AND");
+      for (int i = 0; const auto &a : appl2)
+      {
+        auto val = trans_expr(a, context, aux_stmts, aux_vars);
+        auto check = std::make_shared<emit::Binary>("=");
+        check->values.push_back(std::make_shared<emit::MemberAccessExpression>(args[0], stype->components[i++].first));
+        check->values.push_back(val);
+        ret->values.push_back(check);
+      }
+      return ret;
+    }
+    else if (binary_operators.contains(name))
+    {
+      assert(args.size() == 2);
+      return std::make_shared<emit::Binary>(binary_operators.at(name), args);
+    }
     else if (gctx.recognizers.contains(name))
     {
       return std::make_shared<emit::Binary>(
@@ -98,11 +115,10 @@ std::shared_ptr<emit::Expression> trans::trans_appl(
     {
       return std::make_shared<emit::FBCall>(
           get_ternary(appl, context)->ref,
-           std::vector<emit::FBCall::Argument>{
-            {"c", args[0], true},
-            {"e1", args[1], true},
-            {"e0", args[2], true}
-          });
+          std::vector<emit::FBCall::Argument>{
+              {"c", args[0], true},
+              {"e1", args[1], true},
+              {"e0", args[2], true}});
     }
   }
 
