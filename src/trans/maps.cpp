@@ -79,8 +79,8 @@ std::vector<emit::Function> trans::trans_maps(
         sel->else_stmts.push_back(std::make_shared<emit::Assignment>(
             std::make_shared<emit::Reference>("#" + ret.back().name),
             std::make_shared<emit::Reference>("FALSE")));
-      else
-        throw std::runtime_error("Unsupported default return for type " + ret.back().type->name);
+      // else
+      //   throw std::runtime_error("Unsupported default return for type " + ret.back().type->name);
     }
 
     gctx.func_symbs.insert_or_assign(map.name(), ret.back());

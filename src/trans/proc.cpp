@@ -122,14 +122,6 @@ emit::FunctionBlock trans::trans_proc(
 
   selection->options.push_back({std::make_shared<emit::Reference>("#initialize"),
                                 {}});
-  selection->options.back().statements.push_back(
-      std::make_shared<emit::Assignment>(
-          std::make_shared<emit::Reference>("#execute"),
-          std::make_shared<emit::Reference>("TRUE")));
-  selection->options.back().statements.push_back(
-      std::make_shared<emit::Assignment>(
-          std::make_shared<emit::Reference>("#initialize"),
-          std::make_shared<emit::Reference>("FALSE")));
   std::vector<emit::Variable> aux_vars;
   for (auto i = variables_start_parameters; auto arg : init.expressions())
   {
@@ -138,6 +130,25 @@ emit::FunctionBlock trans::trans_proc(
       selection->options.front().statements.push_back(std::move(st));
     }
   }
+
+  selection->options.back().statements.push_back(
+    std::make_shared<emit::Assignment>(
+        std::make_shared<emit::Reference>("#execute"),
+        std::make_shared<emit::Reference>("TRUE")));
+  selection->options.back().statements.push_back(
+    std::make_shared<emit::Assignment>(
+        std::make_shared<emit::Reference>("\"FC_Action_Initialize_DB\".Execute"),
+        std::make_shared<emit::Reference>("TRUE")));
+
+  auto on_done = std::make_shared<emit::Selection>();
+  on_done->options.emplace_back(std::make_shared<emit::Reference>("TRUE"));
+
+  on_done->options.back().statements.push_back(
+      std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>("#initialize"),
+          std::make_shared<emit::Reference>("FALSE")));
+
+  selection->options.front().statements.push_back(on_done);
   selection->options.front().statements.push_back(
       std::make_shared<emit::Reference>("RETURN"));
 
@@ -196,11 +207,25 @@ emit::FunctionBlock trans::trans_proc(
       option.statements.push_back(on_execute);
     }
 
+    auto cond = action.cond;
+    if (action.fb.size() == 0) {
+      for (int i = 0; i < action.params.size(); i++)
+      {
+        if (!action.params[i].is_input)
+          continue;
+        auto te = trans_expr(mcrl2::data::data_expression(action_args[action.params[i].id]), context, aux_stmts, aux_vars);
+        std::stringstream s;
+        s << *te;
+        auto name = action.params[i].name;
+        cond.replace(cond.find(name), name.size(), s.str());
+      }
+    }
+
     auto on_done = std::make_shared<emit::Selection>();
     if (action.fb.size() > 0)
       on_done->options.push_back({std::make_shared<emit::Reference>(action.fb + ".Done")});
     else
-      on_done->options.push_back({std::make_shared<emit::Reference>(action.cond)});
+      on_done->options.push_back({std::make_shared<emit::Reference>(cond)});
     auto &stmts_done = on_done->options.back().statements;
     stmts_done.push_back(
         std::make_shared<emit::Assignment>(
@@ -249,6 +274,7 @@ emit::FunctionBlock trans::trans_proc(
         std::make_shared<emit::Reference>("RETURN"));
     selection->options.push_back(std::move(option));
     std::shared_ptr<emit::Statement> sumst = selection;
+    int iter_i = 0;
     for (auto var : sum.summation_variables())
     {
       if (!svars.contains(var.name()))
@@ -262,22 +288,23 @@ emit::FunctionBlock trans::trans_proc(
       else if (auto stype = dynamic_cast<emit::StructType *>(tvar.type.get()))
       {
         auto indexing = stype->get_indexing_bounded();
-        for (int i = 0; auto dim : indexing)
+        for (int comp_i = 0; auto dim : indexing)
         {
-          aux_vars.push_back({std::format("iter_{}", i), gctx.types.at("Nat")});
+          aux_vars.push_back({std::format("iter_{}", iter_i), gctx.types.at("Nat")});
           auto comp = std::make_shared<emit::Reference>(
-              std::format("#{}.{}", tvar.name, stype->components[i].first));
-          iter->dims.push_back({dim, std::format("iter_{}", i), comp});
-          i++;
+              std::format("#{}.{}", tvar.name, stype->components[comp_i++].first));
+          iter->dims.push_back({dim, std::format("iter_{}", iter_i), comp});
+          iter_i++;
         }
       }
       else if (tvar.type->name == "BOOL")
       {
-        aux_vars.push_back({"iter_0", gctx.types.at("Nat")});
-        iter->dims.emplace_back(2, "iter_0");
+        aux_vars.push_back({std::format("iter_{}", iter_i), gctx.types.at("Nat")});
+        iter->dims.emplace_back(2, std::format("iter_{}", iter_i));
         iter->stmts.push_back(std::make_shared<emit::Assignment>(
             std::make_shared<emit::Reference>("#" + tvar.name),
-            std::make_shared<emit::Reference>("#iter_0 = 1")));
+            std::make_shared<emit::Reference>(std::format("#iter_{} = 0", iter_i))));
+        iter_i++;
       }
       else
       {

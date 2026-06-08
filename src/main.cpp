@@ -77,7 +77,7 @@ void prune_unused_equations(mcrl2::lps::specification& spec)
 }
 
 int main() {
-  const auto text = read_file("/home/milu/University/BFP/test/robot.mcrl2");
+  const auto text = read_file("/home/milu/University/BFP/test/simple.mcrl2");
 
   mcrl2::lps::t_lin_options lin_options{};
   lin_options.ignore_time = true;
