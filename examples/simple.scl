@@ -1,0 +1,235 @@
+FUNCTION FC_Ternary_BOOL : BOOL
+    VAR_INPUT
+        c	:	BOOL;
+        e1	:	BOOL;
+        e0	:	BOOL;
+    END_VAR
+
+    BEGIN
+    IF #c THEN
+        #FC_Ternary_BOOL := #e1;
+    ELSE
+        #FC_Ternary_BOOL := #e0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Ternary_Direction : INT
+    VAR_INPUT
+        c	:	BOOL;
+        e1	:	INT;
+        e0	:	INT;
+    END_VAR
+
+    BEGIN
+    IF #c THEN
+        #FC_Ternary_Direction := #e1;
+    ELSE
+        #FC_Ternary_Direction := #e0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Ternary_INT : INT
+    VAR_INPUT
+        c	:	BOOL;
+        e1	:	INT;
+        e0	:	INT;
+    END_VAR
+
+    BEGIN
+    IF #c THEN
+        #FC_Ternary_INT := #e1;
+    ELSE
+        #FC_Ternary_INT := #e0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Ternary_Color : INT
+    VAR_INPUT
+        c	:	BOOL;
+        e1	:	INT;
+        e0	:	INT;
+    END_VAR
+
+    BEGIN
+    IF #c THEN
+        #FC_Ternary_Color := #e1;
+    ELSE
+        #FC_Ternary_Color := #e0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION is_valid : BOOL
+    VAR_INPUT
+        in_0	:	Position;
+    END_VAR
+
+    BEGIN
+    IF TRUE THEN
+        #is_valid := ((#in_0.x < 2) AND ((#in_0.y < 2) AND (#in_0.z < 2)));
+    END_IF;
+END_FUNCTION
+
+FUNCTION can_reach : BOOL
+    VAR_INPUT
+        in_0	:	ARRAY [0..1, 0..1, 0..1] OF INT;
+        in_1	:	Position;
+    END_VAR
+
+    VAR_TEMP
+        f_i1 : INT;
+        f_i2 : INT;
+        f_i3 : INT;
+        f_p : Position;
+        f_c : BOOL;
+    END_VAR
+
+    BEGIN
+    IF TRUE THEN
+        #f_c := TRUE;
+        FOR #f_i1 := 0 TO 1 DO
+            #f_p.x := #f_i1;
+            FOR #f_i2 := 0 TO 1 DO
+                #f_p.y := #f_i2;
+                FOR #f_i3 := 0 TO 1 DO
+                  #f_p.z := #f_i3;
+                  #f_c := #f_c AND ((NOT((is_valid(#f_p)) AND (#in_1.x = #f_p.x) AND (#in_1.y = #f_p.y) AND (#in_1.z > #f_p.z))) OR (in_0[#f_p.x, #f_p.y, #f_p.z] = 0));
+                END_FOR;
+            END_FOR;
+        END_FOR;
+        #can_reach := (is_valid(#in_1) AND #f_c);
+    END_IF;
+END_FUNCTION
+
+FUNCTION insert : Void
+    VAR_IN_OUT
+        in_0	:	ARRAY [0..1, 0..1, 0..1] OF INT;
+    END_VAR
+
+    VAR_INPUT
+        in_1	:	Position;
+        in_2	:	INT;
+    END_VAR
+
+    BEGIN
+    IF (NOT((#in_2 = 0)) AND is_valid(#in_1)) THEN
+        #in_0[#in_1.x, #in_1.y, #in_1.z] := #in_2;
+    END_IF;
+END_FUNCTION
+
+FUNCTION pop_storage : Void
+    VAR_IN_OUT
+        in_0	:	ARRAY [0..1, 0..1, 0..1] OF INT;
+    END_VAR
+
+    VAR_INPUT
+        in_1	:	Position;
+    END_VAR
+
+    BEGIN
+    IF is_valid(#in_1) THEN
+        #in_0[#in_1.x, #in_1.y, #in_1.z] := 0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION_BLOCK "FB_Generated_Controller"
+    VAR_INPUT
+        initialize	:	BOOL;
+    END_VAR
+
+    VAR_OUTPUT
+        error	:	BOOL;
+    END_VAR
+
+    VAR
+        execute	:	BOOL;
+        s1_P	:	INT;
+        c_P	:	INT;
+        s_P	:	ARRAY [0..1, 0..1, 0..1] OF INT;
+        c1_P	:	INT;
+        p_P	:	Position;
+        e_P	:	BOOL;
+        f_i1 : INT;
+        f_i2 : INT;
+        f_i3 : INT;
+    END_VAR
+
+    BEGIN
+    IF #initialize THEN
+        #execute := TRUE;
+        #s1_P := 6;
+        #c_P := 0;
+        FILL_BLK(IN := 0, COUNT := 8, OUT => #s_P);
+    ELSIF (#s1_P = 4) THEN
+        IF "FB_EventMonitor_DB".WorkpieceAtMiddle THEN
+            #execute := TRUE;
+            #s1_P := 5;
+            RETURN;
+        END_IF;
+    ELSIF (#s1_P = 3) THEN
+        IF "FB_EventMonitor_DB".WorkpieceAtStart THEN
+            #execute := TRUE;
+            #s1_P := 2;
+            #c_P := 0;
+            RETURN;
+        END_IF;
+    ELSIF (#s1_P = 2) THEN
+        IF "FB_EventMonitor_DB".xDetectionDone THEN
+            #c1_P := "FB_EventMonitor_DB".iDetectedColor;
+            #execute := TRUE;
+            #s1_P := 4;
+            #c_P := #c1_P;
+            RETURN;
+        END_IF;
+    ELSIF (#s1_P = 1) THEN
+        FOR #f_i1 := 0 TO 1 DO
+            #p_P.x := #f_i1;
+            FOR #f_i2 := 0 TO 1 DO
+                #p_P.y := #f_i2;
+                FOR #f_i3 := 0 TO 1 DO
+                  #p_P.z := #f_i3;
+                  IF (can_reach(#s_P, #p_P)) THEN
+                      IF #execute THEN
+                        "FB_Action_Store_DB".Shelf := #p_P.x;
+                        "FB_Action_Store_DB".Row := #p_P.y;
+                        "FB_Action_Store_DB".Position := #p_P.z;
+                        "FB_Action_Store_DB".Execute := TRUE;
+                      END_IF;
+                      IF "FB_Action_Store_DB".Done THEN
+                          "FB_Action_Store_DB".Execute := FALSE;
+                          #execute := TRUE;
+                          #s1_P := 6;
+                          #c_P := 0;
+                          insert(#s_P, #p_P, #c_P);
+                          RETURN;
+                      END_IF;
+                      #execute := FALSE;
+                      RETURN;
+                  END_IF;
+                END_FOR;
+            END_FOR;
+        END_FOR;
+    ELSIF (#s1_P = 6) THEN
+        IF #execute THEN
+          "FB_Action_Conveyor_DB".Mode := 1;
+          "FB_Action_Conveyor_DB".Execute := TRUE;
+        END_IF;
+        IF "FB_Action_Conveyor_DB".Done THEN
+            "FB_Action_Conveyor_DB".Execute := FALSE;
+            #execute := TRUE;
+            #s1_P := 3;
+            #c_P := 0;
+            RETURN;
+        END_IF;
+    ELSIF (#s1_P = 5) THEN
+        IF #execute THEN
+          "FB_Action_Conveyor_DB".Mode := 2;
+          "FB_Action_Conveyor_DB".Execute := TRUE;
+        END_IF;
+        IF "FB_Action_Conveyor_DB".Done THEN
+            #execute := TRUE;
+            #s1_P := 1;
+            RETURN;
+        END_IF;
+    END_IF;
+    #execute := FALSE;
+END_FUNCTION_BLOCK

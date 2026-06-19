@@ -99,7 +99,7 @@ std::vector<emit::Function> trans::trans_maps(
 
     auto appl = mcrl2::data::application(eqn.lhs());
     auto op = mcrl2::data::function_symbol(appl.head());
-    auto cond = std::make_shared<emit::Binary>("&&");
+    auto cond = std::make_shared<emit::Binary>("AND");
 
     if (!selections.contains(op.name()))
     {

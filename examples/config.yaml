@@ -1,0 +1,70 @@
+bounds:
+  Position: [7,4,2]
+actions:
+  - action_name: store
+    fb_name: '"FB_Action_Store_DB"'
+    parameters:
+    - input: Shelf
+      id: 0
+      transform: $.x
+    - input: Row
+      id: 0  
+      transform: $.y
+    - input: Position
+      id: 0
+      transform: $.z
+  - action_name: unstore
+    fb_name: '"FB_Action_Retrieve_DB"'
+    parameters:
+    - id: 0
+      input: Shelf
+      transform: $.x
+    - id: 0
+      input: Row
+      transform: $.y
+    - id: 0
+      input: Position
+      transform: $.z
+  - action_name: move_hardware
+    fb_name: '"FB_Action_Conveyor_DB"'
+    parameters:
+    - id: 0
+      input: Mode
+  - action_name: move
+    fb_name: '"FB_Action_Conveyor_DB"'
+    parameters:
+    - id: 0
+      input: Mode
+  - action_name: sensor_left
+    condition: '"FB_EventMonitor_DB".WorkpieceAtStart'
+  - action_name: sensor_mid
+    condition: '"FB_EventMonitor_DB".WorkpieceAtMiddle'
+  - action_name: sensor_right
+    condition: '"FB_EventMonitor_DB".WorkpieceAtEnd'
+  - action_name: detection_module
+    condition: '"FB_EventMonitor_DB".xDetectionDone'
+    parameters:
+    - id: 0
+      output: '"FB_EventMonitor_DB".iDetectedColor'
+  - action_name: key_switch
+    condition: xMKeySwitchOut = ($0 = 0)
+    parameters:
+    - id: 0
+      input: $0
+  - action_name: switch_io_mode
+    condition: xMKeySwitchOut = ($0 = 0)
+    parameters:
+    - id: 0
+      input: $0
+  - action_name: input_position
+    condition: ManualInput
+    parameters:
+    - id: 0
+      output: InputRow
+      transform: $.x
+    - id: 0
+      output: InputShelf
+      transform: $.y
+    - id: 0
+      output: InputPosition
+      transform: $.z

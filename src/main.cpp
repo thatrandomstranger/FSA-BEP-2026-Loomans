@@ -76,8 +76,12 @@ void prune_unused_equations(mcrl2::lps::specification& spec)
     spec.data().remove_mapping(r);
 }
 
-int main() {
-  const auto text = read_file("/home/milu/University/BFP/test/simple.mcrl2");
+int main(int argc, const char** argv) {
+  if (argc != 3) {
+    std::cerr << "Incorrect usage: mcrl22plc [mCRL2 model] [YAML config]";
+    return -1;
+  }
+  const auto text = read_file(argv[1]);
 
   mcrl2::lps::t_lin_options lin_options{};
   lin_options.ignore_time = true;
@@ -91,14 +95,10 @@ int main() {
 
   auto spec = mcrl2::lps::remove_stochastic_operators(lin);
 
-  // prune_unused_equations(spec);
-  // mcrl2::data::rewriter rewriter(spec.data(), mcrl2::data::jitty);
-  // mcrl2::lps::constelm(spec, rewriter, false);
-
+  std::cerr << "Linearized spec:" << std::endl;
   std::cerr << spec << std::endl;
-  // return 0;
 
-  auto config = YAML::LoadFile("../../test/config_new.yaml");
+  auto config = YAML::LoadFile(argv[2]);
   for (auto b : config["bounds"]) {
     trans::gctx.bounds.insert_or_assign(b.first.as<std::string>(), b.second.as<std::vector<int>>());
   }

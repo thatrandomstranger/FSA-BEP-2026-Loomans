@@ -7,6 +7,7 @@
 #include "emit/array_type.hpp"
 #include "emit/index.hpp"
 #include "emit/fb_call.hpp"
+#include "emit/assignment.hpp"
 
 using namespace trans;
 
@@ -119,6 +120,17 @@ std::shared_ptr<emit::Expression> trans::trans_appl(
               {"c", args[0], true},
               {"e1", args[1], true},
               {"e0", args[2], true}});
+    }
+    else if (gctx.constructors.contains(name))
+    {
+      auto stype = gctx.constructors.at(name);
+      aux_vars.emplace_back("TMP_" + stype->name, stype);
+      for (int i = 0; const auto& [n,t] : stype->components) {
+        aux_stmts.push_back(std::make_shared<emit::Assignment>(
+          std::make_shared<emit::Reference>("#TMP_" + stype->name + "." + n),
+            args[i++]));
+      }
+      return std::make_shared<emit::Reference>("#TMP_" + stype->name);
     }
   }
 

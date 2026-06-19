@@ -41,7 +41,7 @@ static std::vector<std::shared_ptr<emit::Statement>> trans_assignment(
           std::make_shared<emit::Reference>("#" + var.name));
       for (int i = 0; auto dim : indexing)
       {
-        auto iter = std::format("iter_{}", i++);
+        auto iter = std::format("itera_{}", i++);
         aux_vars.push_back({iter, gctx.types.at("Nat")});
         iterate->dims.push_back({dim, iter});
         index->indexers.push_back(std::make_shared<emit::Reference>("#" + iter));
@@ -67,13 +67,18 @@ static std::vector<std::shared_ptr<emit::Statement>> trans_assignment(
       }
       // TODO: Add case for 'if' or other expressions.
       return stmts;
+    } else {
+      stmts.push_back(std::make_shared<emit::Assignment>(
+        std::make_shared<emit::Reference>("#" + var.name),
+        trans_expr(rhs, context, stmts, aux_vars)));
+      return stmts;
     }
   }
   else
   {
-    return {std::make_shared<emit::Assignment>(
+    stmts.push_back(std::make_shared<emit::Assignment>(
         std::make_shared<emit::Reference>("#" + var.name),
-        trans_expr(rhs, context, stmts, aux_vars))};
+        trans_expr(rhs, context, stmts, aux_vars)));
   }
   return stmts;
 }
@@ -158,6 +163,7 @@ emit::FunctionBlock trans::trans_proc(
           std::make_shared<emit::Reference>("FALSE")));
 
   selection->options.front().statements.push_back(on_done);
+
   selection->options.front().statements.push_back(
       std::make_shared<emit::Reference>("RETURN"));
 
@@ -257,7 +263,7 @@ emit::FunctionBlock trans::trans_proc(
       assert(mcrl2::data::is_variable(action_args[action.params[i].id]));
       auto tvar = mcrl2::data::variable(action_args[action.params[i].id]);
       svars.extract(tvar.name());
-      auto te = trans_expr(mcrl2::data::data_expression(action_args[action.params[i].id]), context, aux_stmts, aux_vars);
+      auto te = trans_expr(mcrl2::data::data_expression(action_args[action.params[i].id]), context, stmts_done, aux_vars);
       if (action.params[i].transform.size() > 0)
       {
         std::stringstream s;
@@ -279,9 +285,13 @@ emit::FunctionBlock trans::trans_proc(
       }
     }
 
-    option.statements.push_back(std::move(on_done));
-    option.statements.push_back(
+    if (action.fb.size() == 0)
+      on_done->options.back().statements.push_back(
         std::make_shared<emit::Reference>("RETURN"));
+    option.statements.push_back(std::move(on_done));
+    if (action.fb.size() > 0)
+      option.statements.push_back(
+          std::make_shared<emit::Reference>("RETURN"));
     selection->options.push_back(std::move(option));
     std::shared_ptr<emit::Statement> sumst = selection;
     int iter_i = 0;

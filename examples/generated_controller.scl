@@ -1,0 +1,372 @@
+FUNCTION FC_Ternary_BOOL : BOOL
+    VAR_INPUT
+        c	:	BOOL;
+        e1	:	BOOL;
+        e0	:	BOOL;
+    END_VAR
+
+    BEGIN
+    IF #c THEN
+        #FC_Ternary_BOOL := #e1;
+    ELSE
+        #FC_Ternary_BOOL := #e0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Ternary_INT : INT
+    VAR_INPUT
+        c	:	BOOL;
+        e1	:	INT;
+        e0	:	INT;
+    END_VAR
+
+    BEGIN
+    IF #c THEN
+        #FC_Ternary_INT := #e1;
+    ELSE
+        #FC_Ternary_INT := #e0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Ternary_Position : Position
+    VAR_INPUT
+        c	:	BOOL;
+        e1	:	Position;
+        e0	:	Position;
+    END_VAR
+
+    BEGIN
+    IF #c THEN
+        #FC_Ternary_Position := #e1;
+    ELSE
+        #FC_Ternary_Position := #e0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Gen_is_valid : BOOL
+    VAR_INPUT
+        in_0	:	Position;
+    END_VAR
+
+    BEGIN
+    IF TRUE THEN
+        #FC_Gen_is_valid := ((#in_0.x < 4) AND ((#in_0.y < 6) AND (#in_0.z < 2)));
+    ELSE
+        #FC_Gen_is_valid := FALSE;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Gen_can_reach : BOOL
+    VAR_INPUT
+        in_0	:	ARRAY [0..6, 0..3, 0..1] OF INT;
+        in_1	:	Position;
+    END_VAR
+
+    VAR_TEMP
+        binder_var	:	Position;
+        iter_0	:	INT;
+        iter_1	:	INT;
+        iter_2	:	INT;
+        binder_res	:	BOOL;
+    END_VAR
+
+    BEGIN
+    IF TRUE THEN
+        #binder_res := TRUE;
+        FOR #iter_0 := 0 TO 6 DO
+            #binder_var.x := iter_0;
+            FOR #iter_1 := 0 TO 3 DO
+                #binder_var.y := iter_1;
+                FOR #iter_2 := 0 TO 1 DO
+                    #binder_var.z := iter_2;
+                    #binder_res := (#binder_res AND (NOT((FC_Gen_is_valid(in_0 := #binder_var) AND ((#binder_var.x = #in_1.x) AND ((#binder_var.y = #in_1.y) AND (#binder_var.z > #in_1.z))))) OR (#in_0[#binder_var.x, #binder_var.y, #binder_var.z] = 0)));
+                END_FOR;
+            END_FOR;
+        END_FOR;
+        #FC_Gen_can_reach := (FC_Gen_is_valid(in_0 := #in_1) AND #binder_res);
+    ELSE
+        #FC_Gen_can_reach := FALSE;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Gen_insert : Void
+    VAR_IN_OUT
+        in_0	:	ARRAY [0..6, 0..3, 0..1] OF INT;
+    END_VAR
+
+    VAR_INPUT
+        in_1	:	Position;
+        in_2	:	INT;
+    END_VAR
+
+    BEGIN
+    IF (NOT((#in_2 = 0)) AND FC_Gen_is_valid(in_0 := #in_1)) THEN
+        #in_0[#in_1.x, #in_1.y, #in_1.z] := #in_2;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Gen_pop : Void
+    VAR_IN_OUT
+        in_0	:	ARRAY [0..6, 0..3, 0..1] OF INT;
+    END_VAR
+
+    VAR_INPUT
+        in_1	:	Position;
+    END_VAR
+
+    BEGIN
+    IF FC_Gen_is_valid(in_0 := #in_1) THEN
+        #in_0[#in_1.x, #in_1.y, #in_1.z] := 0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Gen_can_unstore : BOOL
+    VAR_INPUT
+        in_0	:	ARRAY [0..6, 0..3, 0..1] OF INT;
+    END_VAR
+
+    VAR_TEMP
+        binder_var	:	Position;
+        iter_0	:	INT;
+        iter_1	:	INT;
+        iter_2	:	INT;
+        binder_res	:	BOOL;
+    END_VAR
+
+    BEGIN
+    IF TRUE THEN
+        #binder_res := FALSE;
+        FOR #iter_0 := 0 TO 6 DO
+            #binder_var.x := iter_0;
+            FOR #iter_1 := 0 TO 3 DO
+                #binder_var.y := iter_1;
+                FOR #iter_2 := 0 TO 1 DO
+                    #binder_var.z := iter_2;
+                    #binder_res := (#binder_res OR NOT((#in_0[#binder_var.x, #binder_var.y, #binder_var.z] = 0)));
+                END_FOR;
+            END_FOR;
+        END_FOR;
+        #FC_Gen_can_unstore := #binder_res;
+    ELSE
+        #FC_Gen_can_unstore := FALSE;
+    END_IF;
+END_FUNCTION
+
+FUNCTION FC_Gen_toggle_io_mode : INT
+    VAR_INPUT
+        in_0	:	INT;
+    END_VAR
+
+    BEGIN
+    IF ((in_0 = 0) AND TRUE) THEN
+        #FC_Gen_toggle_io_mode := 1;
+    ELSIF ((in_0 = 1) AND TRUE) THEN
+        #FC_Gen_toggle_io_mode := 0;
+    ELSE
+        #FC_Gen_toggle_io_mode := 0;
+    END_IF;
+END_FUNCTION
+
+FUNCTION_BLOCK "FB_Generated_Controller"
+    VAR_INPUT
+        initialize	:	BOOL;
+    END_VAR
+
+    VAR_OUTPUT
+        error	:	BOOL;
+    END_VAR
+
+    VAR
+        execute	:	BOOL;
+        s1_P	:	INT;
+        p_P	:	Position;
+        c_P	:	INT;
+        s_P	:	ARRAY [0..6, 0..3, 0..1] OF INT;
+        io_P	:	INT;
+        p4_P	:	Position;
+        c1_P	:	INT;
+        p3_P	:	Position;
+        e2_P	:	BOOL;
+        e1_P	:	BOOL;
+        itera_0	:	INT;
+        itera_1	:	INT;
+        itera_2	:	INT;
+        iter_0	:	INT;
+        iter_1	:	INT;
+        iter_2	:	INT;
+        TMP_Position	:	Position;
+    END_VAR
+
+    BEGIN
+    IF #initialize THEN
+        #s1_P := 10;
+        #p_P.x := 0;
+        #p_P.y := 0;
+        #p_P.z := 0;
+        #c_P := 1;
+        FOR #itera_0 := 0 TO 6 DO
+            FOR #itera_1 := 0 TO 3 DO
+                FOR #itera_2 := 0 TO 1 DO
+                    #s_P[#itera_0, #itera_1, #itera_2] := 0;
+                END_FOR;
+            END_FOR;
+        END_FOR;
+        #io_P := 0;
+        #execute := TRUE;
+        "FB_Action_Initialize_DB".Execute := TRUE;
+        IF "FB_Action_Initialize_DB".Done THEN
+            #initialize := FALSE;
+            "FB_Action_Initialize_DB".Execute := FALSE;
+        END_IF;
+        RETURN;
+    END_IF;
+    FOR #iter_0 := 0 TO 6 DO
+        #p4_P.x := iter_0;
+        FOR #iter_1 := 0 TO 3 DO
+            #p4_P.y := iter_1;
+            FOR #iter_2 := 0 TO 1 DO
+                #p4_P.z := iter_2;
+                IF ((#s1_P = 10) AND (NOT((#s_P[#p4_P.x, #p4_P.y, #p4_P.z] = 0)) AND (#io_P = 1))) THEN
+                    IF #execute THEN
+                        #execute := FALSE;
+                        "FB_Action_Retrieve_DB".Execute := TRUE;
+                        "FB_Action_Retrieve_DB".Shelf := #p4_P.x;
+                        "FB_Action_Retrieve_DB".Row := #p4_P.y;
+                        "FB_Action_Retrieve_DB".Position := #p4_P.z;
+                    END_IF;
+                    IF "FB_Action_Retrieve_DB".Done THEN
+                        #execute := TRUE;
+                        "FB_Action_Retrieve_DB".Execute := FALSE;
+                        #s1_P := 4;
+                        #p_P := #p4_P;
+                        #c_P := 1;
+                    END_IF;
+                    RETURN;
+                END_IF;
+            END_FOR;
+        END_FOR;
+    END_FOR;
+    IF ((#s1_P = 10) AND (#io_P = 0)) THEN
+        IF "FB_EventMonitor_DB".WorkpieceAtStart THEN
+            #execute := TRUE;
+            #s1_P := 3;
+            #p_P.x := 0;
+            #p_P.y := 0;
+            #p_P.z := 0;
+            #c_P := 1;
+            RETURN;
+        END_IF;
+    END_IF;
+    IF (#s1_P = 10) THEN
+        IF xMKeySwitchOut = (FC_Gen_toggle_io_mode(in_0 := #io_P) = 0) THEN
+            #execute := TRUE;
+            #s1_P := 10;
+            #p_P.x := 0;
+            #p_P.y := 0;
+            #p_P.z := 0;
+            #c_P := 1;
+            #io_P := FC_Gen_toggle_io_mode(in_0 := #io_P);
+            RETURN;
+        END_IF;
+    END_IF;
+    IF (#s1_P = 8) THEN
+        IF "FB_EventMonitor_DB".WorkpieceAtMiddle THEN
+            #execute := TRUE;
+            #s1_P := 9;
+            #p_P.x := 0;
+            #p_P.y := 0;
+            #p_P.z := 0;
+            RETURN;
+        END_IF;
+    END_IF;
+    IF (#s1_P = 7) THEN
+        IF TRUE THEN
+            #execute := TRUE;
+            #s1_P := 10;
+            #p_P.x := 0;
+            #p_P.y := 0;
+            #p_P.z := 0;
+            #c_P := 1;
+            FC_Gen_pop(in_0 := #s_P, in_1 := #p_P);
+            RETURN;
+        END_IF;
+    END_IF;
+    IF (#s1_P = 5) THEN
+        IF "FB_EventMonitor_DB".WorkpieceAtEnd THEN
+            #execute := TRUE;
+            #s1_P := 6;
+            #c_P := 1;
+            RETURN;
+        END_IF;
+    END_IF;
+    IF (#s1_P = 2) THEN
+        IF "FB_EventMonitor_DB".xDetectionDone THEN
+            #execute := TRUE;
+            #c1_P := "FB_EventMonitor_DB".iDetectedColor;
+            #s1_P := 8;
+            #p_P.x := 0;
+            #p_P.y := 0;
+            #p_P.z := 0;
+            #c_P := #c1_P;
+            RETURN;
+        END_IF;
+    END_IF;
+    FOR #iter_0 := 0 TO 6 DO
+        #p3_P.x := iter_0;
+        FOR #iter_1 := 0 TO 3 DO
+            #p3_P.y := iter_1;
+            FOR #iter_2 := 0 TO 1 DO
+                #p3_P.z := iter_2;
+                IF ((#s1_P = 1) AND (FC_Gen_can_reach(in_0 := #s_P, in_1 := #p3_P) AND (#s_P[#p3_P.x, #p3_P.y, #p3_P.z] = 0))) THEN
+                    IF #execute THEN
+                        #execute := FALSE;
+                        "FB_Action_Store_DB".Execute := TRUE;
+                        "FB_Action_Store_DB".Shelf := #p3_P.x;
+                        "FB_Action_Store_DB".Row := #p3_P.y;
+                        "FB_Action_Store_DB".Position := #p3_P.z;
+                    END_IF;
+                    IF "FB_Action_Store_DB".Done THEN
+                        #execute := TRUE;
+                        "FB_Action_Store_DB".Execute := FALSE;
+                        #s1_P := 10;
+                        #p_P.x := 0;
+                        #p_P.y := 0;
+                        #p_P.z := 0;
+                        #c_P := 1;
+                        FC_Gen_insert(in_0 := #s_P, in_1 := #p3_P, in_2 := #c_P);
+                    END_IF;
+                    RETURN;
+                END_IF;
+            END_FOR;
+        END_FOR;
+    END_FOR;
+    FOR #iter_1 := 0 TO 1 DO
+        #e1_P := #iter_1 = 0;
+        FOR #iter_0 := 0 TO 1 DO
+            #e2_P := #iter_0 = 0;
+            IF FC_Ternary_BOOL(c := #e2_P, e1 := FC_Ternary_BOOL(c := #e1_P, e1 := (#s1_P = 9), e0 := (#s1_P = 6)), e0 := FC_Ternary_BOOL(c := #e1_P, e1 := (#s1_P = 4), e0 := (#s1_P = 3))) THEN
+                IF #execute THEN
+                    #execute := FALSE;
+                    "FB_Action_Conveyor_DB".Execute := TRUE;
+                    "FB_Action_Conveyor_DB".Mode := FC_Ternary_INT(c := #e2_P, e1 := 2, e0 := 1);
+                END_IF;
+                IF "FB_Action_Conveyor_DB".Done THEN
+                    #execute := TRUE;
+                    "FB_Action_Conveyor_DB".Execute := FALSE;
+                    #s1_P := FC_Ternary_INT(c := #e2_P, e1 := FC_Ternary_INT(c := #e1_P, e1 := 1, e0 := 7), e0 := FC_Ternary_INT(c := #e1_P, e1 := 5, e0 := 2));
+                    #TMP_Position.x := 0;
+                    #TMP_Position.y := 0;
+                    #TMP_Position.z := 0;
+                    #TMP_Position.x := 0;
+                    #TMP_Position.y := 0;
+                    #TMP_Position.z := 0;
+                    #p_P := FC_Ternary_Position(c := #e2_P, e1 := FC_Ternary_Position(c := #e1_P, e1 := #TMP_Position, e0 := #p_P), e0 := FC_Ternary_Position(c := #e1_P, e1 := #p_P, e0 := #TMP_Position));
+                    #c_P := FC_Ternary_INT(c := #e2_P, e1 := FC_Ternary_INT(c := #e1_P, e1 := #c_P, e0 := 1), e0 := 1);
+                    #io_P := #io_P;
+                END_IF;
+                RETURN;
+            END_IF;
+        END_FOR;
+    END_FOR;
+END_FUNCTION_BLOCK
+
